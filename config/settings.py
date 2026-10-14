@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from pathlib import Path
@@ -12,7 +13,7 @@ ALLOWED_HOSTS = ['*']
 DEBUG = False
 
 SHORTENER_URL = os.environ.get('BASE_URL', 'http://127.0.0.1:8000').strip().lower()
-SHORTENER_URL.removesuffix('/')  # ex: https://url.AliRn.ir
+SHORTENER_URL = SHORTENER_URL.removesuffix('/')  # ex: https://url.AliRn.ir
 
 BASE_URL = urlparse(SHORTENER_URL).hostname.split('.')[-2:]  # ex: [AliRn, ir]
 BASE_URL = '.'.join(BASE_URL)  # AliRn.ir
@@ -51,3 +52,6 @@ DATABASES = {
         'NAME': DB_DIR / 'db.sqlite3',
     }
 }
+
+from app.domains import approved_domains
+APPROVED_DOMAINS = approved_domains(os.environ.get("APPROVED_DOMAINS", json.loads((BASE_DIR / "approved_domains.json").read_text())))

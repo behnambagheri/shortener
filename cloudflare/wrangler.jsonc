@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bea-shortener",
+  "account_id": "65a8188637073a50148b1e6e59e1c1a9",
+  "main": "dist/worker.mjs",
+  "compatibility_date": "2026-08-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "build": {
+    "command": "npm run build"
+  },
+  "vars": {
+    "PUBLIC_ORIGIN": "https://s.bea.sh"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bea-shortener",
+      "database_id": "e254726a-b429-48dc-b324-b2d83c2cc5a8",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "s.bea.sh",
+      "custom_domain": true
+    }
+  ]
+}

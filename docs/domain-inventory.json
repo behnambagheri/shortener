@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-14",
+  "unique_domains": 30,
+  "cloudflare": [
+    "4comer.com",
+    "4comers.com",
+    "azkibit.com",
+    "bea.sh",
+    "behnambagheri.ir",
+    "behnam.id.ir",
+    "blackpearlmineral.com",
+    "coinchecko.io",
+    "langarabi-intl.com",
+    "maxdigitalfund.ir",
+    "maxpool.ir",
+    "my-sellory.com",
+    "pmw.services",
+    "rashamarine.com"
+  ],
+  "arvan": {
+    "personal": [
+      "behnazbagheri.ir",
+      "kiadarya.net",
+      "langarabi.com",
+      "sublingo.ir",
+      "negarmalek.ir",
+      "platonic.ir",
+      "kiadarya.org",
+      "beaim.ir",
+      "behnam.pro"
+    ],
+    "bitmax": [
+      "qcmax.ir",
+      "mybitmax.com",
+      "offeriti.com",
+      "maxpool.site",
+      "bitmax.ir",
+      "bimax.space"
+    ],
+    "default": [
+      "behnazbagheri.ir",
+      "kiadarya.net",
+      "langarabi.com",
+      "sublingo.ir",
+      "negarmalek.ir",
+      "platonic.ir",
+      "kiadarya.org",
+      "beaim.ir",
+      "behnam.pro"
+    ]
+  },
+  "cloudflare_worker_custom_domains": [
+    "bea.sh",
+    "bea.wiki"
+  ]
+}

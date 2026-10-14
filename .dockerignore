@@ -3,3 +3,11 @@
 .git/
 database/
 sample.png
+
+cloudflare/node_modules/
+cloudflare/.wrangler/
+cloudflare/dist/
+cloudflare/generated/
+public/
+.claude/
+.DS_Store

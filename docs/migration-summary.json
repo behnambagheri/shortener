@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-14",
+  "source": "bea.aws.max / shortener-shortener-1 / app_url",
+  "source_rows": 461320,
+  "unique_names": 456190,
+  "imported": 1,
+  "excluded_destination": 456189,
+  "excluded_name": 0,
+  "duplicate_rows": 5130,
+  "duplicate_policy": "Latest source row per short name",
+  "source_unchanged": true
+}
