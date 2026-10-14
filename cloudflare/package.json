@@ -17,5 +17,9 @@
     "postcss": "8.5.29",
     "tailwindcss": "4.3.3",
     "wrangler": "4.151.0"
+  },
+  "overrides": {
+    "sharp": "0.35.5",
+    "undici": "7.29.1"
   }
 }
