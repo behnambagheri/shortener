@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light dark">
+  <title>Check this link · bea.sh</title>
+  <link rel="stylesheet" href="{{ css_url }}">
+  <script type="module" src="{{ interstitial_js_url }}"></script>
+</head>
+<body class="min-h-screen bg-base-200 font-sans text-base-content antialiased">
+  <div class="mx-auto flex min-h-screen max-w-3xl flex-col px-4 sm:px-8">
+    <header class="flex items-center justify-between gap-4 border-b border-base-300 py-6">
+      <a href="/" class="flex min-w-0 items-center gap-3 font-semibold tracking-tight" aria-label="Short links home">
+        <span class="grid size-10 shrink-0 place-items-center rounded-box border border-base-300 bg-base-100 text-sm">BB</span>
+        <span class="truncate">bea.sh <span class="mx-2 text-base-content/30">/</span><span class="font-normal text-base-content/65">Short links</span></span>
+      </a>
+      <button id="theme-toggle" type="button" class="btn btn-sm" aria-label="Appearance: Auto"><span aria-hidden="true">◐</span><span id="theme-label">Auto</span></button>
+    </header>
+    <main class="flex-1 py-10 sm:py-14">
+      <div class="card card-border bg-base-100">
+        <div class="card-body gap-6 p-6 sm:p-8">
+          <div>
+            <p class="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-base-content/55">Check before you continue</p>
+            <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">This link leads to another website</h1>
+            <p class="mt-3 text-sm leading-relaxed text-base-content/65">A visitor created <span class="font-mono">[[short]]</span>. bea.sh does not own or check the page it opens. Never enter passwords, codes, or payment details unless you trust the site below.</p>
+          </div>
+          <div class="rounded-box border border-base-300 bg-base-200 p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.14em] text-base-content/55">Website</p>
+            <p class="mt-1 break-all text-xl font-semibold">[[host]]</p>
+            <p class="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-base-content/55">Full address</p>
+            <p class="mt-1 break-all font-mono text-sm text-base-content/75">[[target]]</p>
+          </div>
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <a class="btn btn-primary btn-lg sm:flex-1" href="[[target]]" rel="noopener noreferrer nofollow">Continue to [[host]] <span aria-hidden="true">→</span></a>
+            <a class="btn btn-lg" href="/">Don't continue</a>
+          </div>
+          <div id="reported" role="status" class="alert alert-success alert-soft text-sm [[reported_class]]"><span>Thank you. The report was recorded and will be reviewed.</span></div>
+          <details class="[[report_class]] rounded-box border border-base-300 p-4">
+            <summary class="cursor-pointer text-sm font-semibold">Report this link</summary>
+            <form method="post" action="/api/reports" class="mt-4 space-y-3">
+              <input type="hidden" name="slug" value="[[slug]]">
+              <label for="reason" class="text-sm text-base-content/70">What is wrong with it?</label>
+              <select id="reason" name="reason" class="select w-full">
+                <option value="phishing">Phishing or fake sign-in page</option>
+                <option value="malware">Malware or unwanted download</option>
+                <option value="scam">Scam or fraud</option>
+                <option value="spam">Spam</option>
+                <option value="other">Something else</option>
+              </select>
+              <button class="btn btn-error btn-outline w-full sm:w-auto" type="submit">Send report</button>
+            </form>
+          </details>
+          <p class="text-xs leading-relaxed text-base-content/55 [[abuse_class]]">You can also email <a class="link" href="mailto:[[abuse_email]]?subject=Abuse%20report%20[[slug]]">[[abuse_email]]</a>.</p>
+        </div>
+      </div>
+    </main>
+    <footer class="flex flex-wrap items-center justify-between gap-4 border-t border-base-300 py-6 text-xs text-base-content/50">
+      <a href="/" class="hover:text-base-content">Short links by bea.sh</a><span>Links to phishing, malware, or scams are disabled.</span>
+    </footer>
+  </div>
+</body>
+</html>

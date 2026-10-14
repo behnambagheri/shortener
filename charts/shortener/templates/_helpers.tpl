@@ -23,3 +23,6 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- define "shortener.adminSecret" -}}
 {{- default (printf "%s-admin" (include "shortener.fullname" .)) .Values.admin.existingSecret -}}
 {{- end -}}
+{{- define "shortener.protectionSecret" -}}
+{{- default (printf "%s-protection" (include "shortener.fullname" .)) .Values.protection.existingSecret -}}
+{{- end -}}

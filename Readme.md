@@ -16,10 +16,10 @@ scripts/     Build, preview, smoke tests, legacy snapshot import
 Open `/admin`. Administrators can:
 
 - **Choose who can create links**: everyone (public) or admins only. In admin-only mode the public form is disabled; the API accepts the admin bearer token or a Cloudflare Access identity. Existing links keep redirecting.
-- **Choose allowed destinations**: approved domains only, or any HTTP/HTTPS domain.
+- **Choose allowed destinations**: approved domains only; any domain for signed-in visitors and approved domains for everyone else; or any HTTP/HTTPS domain.
 - **Manage approved domains**: add, remove, search, or reset to the deployment defaults.
-- **Manage links**: search by name or destination, see click counts, disable (returns 410), re-enable, delete, or create links even when public creation is off.
-- **See totals**: links, links created in the last 7 days, clicks, and disabled links.
+- **Manage links**: search by name or destination, filter reported, visitor-made or disabled links, see click counts, abuse reports, creator and expiry, disable (returns 410), re-enable, delete, ban a signed-in creator, or create links even when public creation is off.
+- **See totals and protections**: links, links created in the last 7 days, clicks, disabled and reported links, and which abuse protections are configured.
 
 Redirects always apply the *current* policy, so restricting destinations also stops existing links to domains that are no longer allowed. Settings saved in the admin area are stored in the database and take precedence over `APPROVED_DOMAINS` and `approved_domains.json`, which become the defaults that **Reset to deployment defaults** restores.
 
@@ -45,6 +45,37 @@ The JWT is verified against the team's signing keys, issuer, audience, and expir
 
 Admin responses are `private, no-store` and `noindex`. Cross-site writes are rejected using fetch metadata and the `Origin` header, in addition to the `SameSite=Strict` cookie.
 
+## Abuse protection
+
+Open shorteners attract phishing: attackers borrow the shortener's domain reputation, and the domain gets blocklisted. Links to **approved domains** are trusted and behave as before. The protections below apply to links that visitors create to **any other domain**. Administrators' links are never screened.
+
+| Layer | What it does | Configure |
+| --- | --- | --- |
+| Warning page | Visitors' links outside the approved domains open a `noindex` page showing the real website and full address, with **Continue**, **Don't continue**, and **Report this link**. They never redirect directly, so the shortener is not an open redirector. | Always on |
+| Rate limits | Per network per hour (IPv6 grouped by /64), and per signed-in account per day. Rejected attempts count too. | `LINKS_PER_HOUR` (10), `USER_LINKS_PER_DAY` (50); `0` disables |
+| Turnstile | An invisible Cloudflare challenge before creating links outside the approved domains. | `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` |
+| Static rules | Refuses IP addresses, punycode domains, non-standard ports, other shorteners, free hosting and tunnelling services that phishing kits favor, unusually deep subdomains, and sign-in, verification or wallet-looking addresses. Approve a domain to allow it. | Always on (`src/screening.mjs`) |
+| Threat feeds | Refuses destinations on the OpenPhish feed, Google Safe Browsing, and URLhaus. | Feed: `THREAT_FEED_URLS` (default OpenPhish; empty disables). `SAFE_BROWSING_API_KEY`, `URLHAUS_AUTH_KEY` |
+| New domains | Refuses domains registered less than 30 days ago, using RDAP. Unknown ages are allowed. | `NEW_DOMAIN_DAYS` (30); `0` disables |
+| Re-checks | Every 3 hours, refreshes the feed and re-checks active visitor links with the feed and Safe Browsing; listed links are disabled. | Worker cron in `wrangler.jsonc`; the container runs the same job on a timer (`MAINTENANCE=off` disables) |
+| Reports | One report per network per link. After enough distinct reporters, a visitor link is disabled and an alert is sent. Re-enabling a link clears its reports. | `REPORT_THRESHOLD` (3; `0` never disables), `REPORTS_PER_HOUR` (20) |
+| Expiry | Anonymous visitors' links stop working after 30 days. Signed-in visitors' and admins' links do not expire. | `ANONYMOUS_LINK_DAYS` (30); `0` disables |
+| Visitor sign-in | GitHub or Google sign-in ties links to an account that can be banned (which disables all of its links). GitHub accounts younger than 30 days are refused. Use the **signed_in** destination policy to let only signed-in visitors link outside the approved domains. | `SESSION_SECRET` (32+ characters), `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET` and/or `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, `MIN_ACCOUNT_DAYS` (30) |
+| Alerts | Sends reports, automatic disables, and click spikes on new visitor links (100 clicks within 48 hours) to a webhook and/or Telegram. | `ALERT_WEBHOOK_URL` (JSON `{text, content}`, works with Slack and Discord), `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`, `SPIKE_CLICKS` (100) |
+| Abuse contact | Shown on the home page and the warning page. | `ABUSE_EMAIL` |
+
+Recommended public setup: destination policy **Any domain for signed-in visitors**, with Turnstile, Safe Browsing, sign-in, alerts and `ABUSE_EMAIL` configured.
+
+Setup notes:
+
+- **Turnstile**: create a widget for the short-link hostname in the Cloudflare dashboard (Turnstile → Add widget, mode *Invisible* or *Managed*).
+- **Safe Browsing**: enable the Safe Browsing API in a Google Cloud project and create an API key restricted to it. The Lookup API is free for non-commercial use; use Google Web Risk for commercial services.
+- **URLhaus**: get a free Auth-Key at [auth.abuse.ch](https://auth.abuse.ch/).
+- **GitHub sign-in**: create an OAuth app with callback `https://s.bea.sh/auth/github/callback`. **Google**: create an OAuth client (web application) with redirect URI `https://s.bea.sh/auth/google/callback`.
+- **Telegram**: create a bot with @BotFather, send it a message, and read the chat ID from `https://api.telegram.org/bot<token>/getUpdates`.
+- Register the domain in [Google Search Console](https://search.google.com/search-console) to get an email if Google flags it, and to request a review from *Security issues*.
+- **Container behind a proxy**: set `CLIENT_IP_HEADER` (for example `x-forwarded-for` or `cf-connecting-ip`), or every visitor shares the proxy's rate limit. The last `x-forwarded-for` entry is used. Only set it when a proxy always sets that header, because clients could otherwise choose their own address. The Helm chart defaults to `x-forwarded-for`.
+
 ## Configuration
 
 | Variable | Purpose |
@@ -54,6 +85,8 @@ Admin responses are `private, no-store` and `noindex`. Cross-site writes are rej
 | `ADMIN_TOKEN` | Admin token, at least 16 characters. |
 | `ACCESS_ISSUER`, `ACCESS_AUD`, `ADMIN_EMAILS` | Optional Cloudflare Access sign-in. |
 | `PORT`, `HOST`, `DATA_DIR` | Container only. Defaults: `8080`, `0.0.0.0`, `/var/lib/shortener`. |
+| `CLIENT_IP_HEADER`, `MAINTENANCE` | Container only: trusted proxy header for the visitor address, and `off` to disable the scheduled job. |
+| Abuse protection | See [Abuse protection](#abuse-protection). |
 
 ## Docker
 
@@ -96,28 +129,31 @@ kubectl -n shortener create secret generic shortener-admin --from-literal=token=
 helm upgrade --install shortener ./charts/shortener -n shortener --set admin.existingSecret=shortener-admin
 ```
 
-For Cloudflare Access, set `admin.access.issuer`, `admin.access.aud`, and `admin.access.emails`. Other values: `approvedDomains`, `image.tag`/`image.digest`, `persistence.*`, `ingress.*`, `resources`, scheduling options.
+For Cloudflare Access, set `admin.access.issuer`, `admin.access.aud`, and `admin.access.emails`. Abuse protection uses `protection.env` for plain settings, and `protection.existingSecret` (or `protection.secrets`, which creates a Secret) for keys such as `SESSION_SECRET`, `TURNSTILE_SECRET_KEY`, and `SAFE_BROWSING_API_KEY`; `protection.clientIpHeader` defaults to `x-forwarded-for`. Other values: `approvedDomains`, `image.tag`/`image.digest`, `persistence.*`, `ingress.*`, `resources`, scheduling options.
 
 The chart runs **one replica** with a `Recreate` strategy, because SQLite supports a single writer. Data lives on a `ReadWriteOnce` PersistentVolumeClaim (`persistence.size`, default 1Gi), which is kept when the release is uninstalled. The pod runs as non-root with a read-only root filesystem.
 
 ## API
 
-- `GET /api/config`: approved domains, domain policy, link-creation mode, public short origin.
-- `POST /api/links`: JSON `{ "original": "https://bea.sh/a/long/path", "shortened": "example" }`. Omit `shortened` to generate a random name. Returns the destination, short name, and short URL with status 201. In admin-only mode, send `Authorization: Bearer <ADMIN_TOKEN>`.
-- `GET /example`: 302 redirect, with the current domain policy enforced. Disabled links return 410.
+- `GET /api/config`: approved domains, domain policy, whether this visitor may use any domain, link-creation mode, public short origin, Turnstile site key, sign-in providers and the signed-in visitor.
+- `POST /api/links`: JSON `{ "original": "https://bea.sh/a/long/path", "shortened": "example" }`. Omit `shortened` to generate a random name. Outside the approved domains, include `"turnstile": "<token>"` when Turnstile is configured. Returns the destination, short name, short URL and `expires_at` (or null) with status 201. Too many requests return 429. In admin-only mode, send `Authorization: Bearer <ADMIN_TOKEN>`; the bearer token also skips limits and screening.
+- `GET /example`: 302 redirect for admins' links and approved domains, otherwise the warning page. The current domain policy is enforced. Disabled and expired links return 410.
+- `POST /api/reports`: JSON or form `{ "slug": "example", "reason": "phishing" | "malware" | "scam" | "spam" | "other" }`.
+- `GET /auth/github`, `GET /auth/google`, `POST /auth/logout`: visitor sign-in.
 - `GET /.well-known/health`: database health, deployment commit, domain count.
 - `POST /`: supports the URL-encoded HTML form.
 
 Admin API (session cookie, bearer token, or Access JWT):
 
 - `GET /admin/api/overview`: settings, defaults, totals, sign-in methods.
-- `PUT /admin/api/settings`: any of `{ "link_creation": "public" | "admin", "domain_policy": "approved" | "any", "approved_domains": [...] | null }`. `null` restores the deployment defaults.
-- `GET /admin/api/links?q=&offset=&limit=`: search and paginate links.
+- `PUT /admin/api/settings`: any of `{ "link_creation": "public" | "admin", "domain_policy": "approved" | "signed_in" | "any", "approved_domains": [...] | null }`. `null` restores the deployment defaults.
+- `GET /admin/api/links?q=&filter=all|reported|visitors|disabled&offset=&limit=`: search and paginate links.
 - `POST /admin/api/links`: create a link (works in admin-only mode).
 - `PATCH /admin/api/links/<name>`: `{ "disabled": true | false }`.
 - `DELETE /admin/api/links/<name>`: delete a link and free its name.
+- `PATCH /admin/api/users/<provider:id>`: `{ "banned": true | false }`. Banning disables all of the account's links.
 
-Names use 1–63 ASCII letters, numbers, hyphens, or underscores. Names are case-sensitive and immutable; collisions return 409. `admin`, `api`, `assets`, `static`, `health`, and `new` are reserved. Destinations are limited to 2,048 characters and public request bodies to 8 KiB. Redirects are not cached.
+Names use 1–63 ASCII letters, numbers, hyphens, or underscores. Names are case-sensitive and immutable; collisions return 409. `admin`, `api`, `assets`, `auth`, `static`, `health`, and `new` are reserved. Destinations are limited to 2,048 characters and public request bodies to 8 KiB. Redirects are not cached.
 
 ## Approved destinations
 
@@ -134,7 +170,7 @@ npm run dev     # Workers runtime preview on http://localhost:8787
 npm start       # Node container server on http://localhost:8080 (set DATA_DIR=./data)
 ```
 
-`npm run dev` uses a temporary local D1 database. Its admin token is `ADMIN_TOKEN` from the environment, or `local-preview-admin-token`. Tests cover the Workers runtime with D1 (domain spoofing, concurrent alias collisions, policy changes, assets, HTML escaping, admin sign-in and management), Cloudflare Access JWT validation, and the bundled container server with SQLite persistence across restarts.
+`npm run dev` uses a temporary local D1 database. Its admin token is `ADMIN_TOKEN` from the environment, or `local-preview-admin-token`. Tests cover the Workers runtime with D1 (domain spoofing, concurrent alias collisions, policy changes, assets, HTML escaping, admin sign-in and management, and abuse protection with mocked outbound services: warning page, Turnstile, screening, rate limits, reports, scheduled re-checks, alerts, visitor sign-in and bans), Cloudflare Access JWT validation, and the bundled container server with SQLite persistence and proxy-aware rate limits.
 
 ## GitHub Actions, GHCR, and Cloudflare
 
@@ -146,6 +182,8 @@ npm start       # Node container server on http://localhost:8080 (set DATA_DIR=.
 4. **deploy-worker** (`master` only): applies D1 migrations, deploys the Worker with `DEPLOYMENT_SHA`, and verifies the live site. Smoke checks delete only their own randomly named fixture. Deployments are serialized.
 
 Account: `65a8188637073a50148b1e6e59e1c1a9`. Worker/database: `bea-shortener`, declared in `wrangler.jsonc`. The `CLOUDFLARE_API_TOKEN` repository secret needs Workers Scripts and D1 write access on the account, and Workers Routes/DNS write plus Zone read on bea.sh.
+
+The Worker has a cron trigger (`17 */3 * * *`) for the abuse-protection job. Abuse-protection keys are Worker secrets too (`npx wrangler secret put TURNSTILE_SECRET_KEY`, `SAFE_BROWSING_API_KEY`, `SESSION_SECRET`, `GITHUB_CLIENT_SECRET`, ...); plain settings such as `TURNSTILE_SITE_KEY` or `ABUSE_EMAIL` can be secrets or `vars`.
 
 Admin sign-in on the Worker uses Worker secrets, which persist across deployments:
 
@@ -171,6 +209,6 @@ The Docker SQLite database on `bea.aws.max` was read through a consistent in-mem
 
 `scripts/filter-snapshot.mjs /absolute/private/directory` reads `source.sqlite3` and writes private `approved-entries.json`, `import.sql`, and a counts-only `summary.json`. Imports are idempotent for migrated rows (`created_at = 0`) and cannot overwrite newly created links. Run `import.sql` against D1 with Wrangler, or against the container database with `sqlite3 /var/lib/shortener/shortener.sqlite3 < import.sql` while the service is stopped. Do not commit snapshot files or generated SQL.
 
-The original `s.bea.sh` record was a proxied CNAME to `vps1.bea.sh`, TTL auto. The original Docker service and database remain intact. To return traffic to that service, detach the Worker custom domain and restore that CNAME; remove the custom-domain route from Wrangler too before the next GitHub push. Export/retain D1 first if new Cloudflare links must be preserved. For code-only rollback, redeploy an earlier known-good Worker version while retaining D1. Migration `0002_admin.sql` only adds columns, an index, and a settings table, so earlier Worker versions keep working against the migrated database.
+The original `s.bea.sh` record was a proxied CNAME to `vps1.bea.sh`, TTL auto. The original Docker service and database remain intact. To return traffic to that service, detach the Worker custom domain and restore that CNAME; remove the custom-domain route from Wrangler too before the next GitHub push. Export/retain D1 first if new Cloudflare links must be preserved. For code-only rollback, redeploy an earlier known-good Worker version while retaining D1. Migrations `0002_admin.sql` and `0003_abuse.sql` only add columns, indexes and tables, so earlier Worker versions keep working against the migrated database. Links created before `0003` count as visitors' links, so those outside the approved domains show the warning page.
 
 The earlier Django implementation was removed in favor of the shared handler; it remains in Git history.

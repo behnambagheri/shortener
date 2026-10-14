@@ -1,6 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../templates/index.html";
 @source "../templates/admin.html";
+@source "../templates/interstitial.html";
 @source "./admin-client.mjs";
 @source "./client.mjs";
 @plugin "daisyui" { themes: false; logs: false; }

@@ -30,6 +30,15 @@
         }
       }
     },
+    "protection": {
+      "type": "object",
+      "properties": {
+        "env": { "type": "object", "additionalProperties": { "type": ["string", "number", "boolean"] } },
+        "existingSecret": { "type": "string" },
+        "secrets": { "type": "object", "additionalProperties": { "type": "string" } },
+        "clientIpHeader": { "type": "string", "pattern": "^$|^[A-Za-z0-9-]+$" }
+      }
+    },
     "persistence": {
       "type": "object",
       "properties": {

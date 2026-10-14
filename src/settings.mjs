@@ -18,10 +18,13 @@ export async function loadSettings(env) {
   if (!domainPolicies.includes(domainPolicy) || !creationModes.includes(linkCreation)) throw new Error("Invalid stored settings.");
   const customized = stored.approved_domains !== undefined;
   const domains = customized ? approvedDomains(stored.approved_domains) : defaultDomains(env);
-  return {
-    domain_policy: domainPolicy, link_creation: linkCreation, approved_domains: domains, domains_customized: customized,
-    allowed: domainPolicy === "any" ? null : domains,
-  };
+  return { domain_policy: domainPolicy, link_creation: linkCreation, approved_domains: domains, domains_customized: customized };
+}
+
+// The destination domains a creator may use: null means any domain. `kind` is "public", "user" or "admin".
+export function allowedFor(settings, kind) {
+  if (settings.domain_policy === "any" || (settings.domain_policy === "signed_in" && kind !== "public")) return null;
+  return settings.approved_domains;
 }
 
 export async function saveSettings(env, input) {

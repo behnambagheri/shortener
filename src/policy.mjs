@@ -4,9 +4,10 @@ export class ValidationError extends Error {
   }
 }
 
-export const domainPolicies = ["approved", "any"];
+// "signed_in" allows any domain for signed-in users and administrators, and approved domains for everyone else.
+export const domainPolicies = ["approved", "signed_in", "any"];
 export const creationModes = ["public", "admin"];
-export const reservedNames = ["admin", "api", "assets", "static", "health", "new"];
+export const reservedNames = ["admin", "api", "assets", "auth", "static", "health", "new"];
 
 export function approvedDomains(value) {
   let values = value;
@@ -29,6 +30,10 @@ export function approvedDomains(value) {
   }))].sort();
 }
 
+export function onDomains(host, domains) {
+  return domains.some((domain) => host === domain || host.endsWith(`.${domain}`));
+}
+
 // `domains` is the approved list, or null when any destination domain is allowed.
 export function destination(value, domains, ownHosts = []) {
   if (typeof value !== "string" || value.length > 2048 || /[\x00-\x20\x7f\\]/.test(value) || !/^https?:\/\//i.test(value)) {
@@ -40,7 +45,7 @@ export function destination(value, domains, ownHosts = []) {
     throw new ValidationError("Use an HTTP or HTTPS URL without embedded credentials.");
   }
   const host = url.hostname.toLowerCase().replace(/\.$/, "");
-  if (domains && !domains.some((domain) => host === domain || host.endsWith(`.${domain}`))) {
+  if (domains && !onDomains(host, domains)) {
     throw new ValidationError("That destination is not on an approved domain.", 403);
   }
   if (ownHosts.includes(host)) throw new ValidationError("Use the original destination, rather than another short link.");

@@ -1,5 +1,7 @@
 {{- $access := .Values.admin.access | default dict }}
 {{- $adminSecret := or .Values.admin.token .Values.admin.existingSecret }}
+{{- $protection := .Values.protection | default dict }}
+{{- $protectionSecret := or $protection.existingSecret $protection.secrets }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,8 +21,8 @@ spec:
       labels:
         {{- include "shortener.selectorLabels" . | nindent 8 }}
       annotations:
-        {{- if and .Values.admin.token (not .Values.admin.existingSecret) }}
-        checksum/admin-secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- if or (and .Values.admin.token (not .Values.admin.existingSecret)) (and $protection.secrets (not $protection.existingSecret)) }}
+        checksum/secrets: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
         {{- end }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
@@ -70,6 +72,14 @@ spec:
                   name: {{ include "shortener.adminSecret" . | quote }}
                   key: {{ .Values.admin.secretKey | quote }}
             {{- end }}
+            {{- with $protection.clientIpHeader }}
+            - name: CLIENT_IP_HEADER
+              value: {{ . | quote }}
+            {{- end }}
+            {{- range $name, $value := $protection.env }}
+            - name: {{ $name }}
+              value: {{ $value | toString | quote }}
+            {{- end }}
             {{- if $access.issuer }}
             - name: ACCESS_ISSUER
               value: {{ $access.issuer | quote }}
@@ -78,6 +88,11 @@ spec:
             - name: ADMIN_EMAILS
               value: {{ $access.emails | quote }}
             {{- end }}
+          {{- if $protectionSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ include "shortener.protectionSecret" . | quote }}
+          {{- end }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/shortener

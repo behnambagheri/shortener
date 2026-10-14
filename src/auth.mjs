@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { cookie } from "./http.mjs";
 
 export const sessionCookieName = "shortener_admin";
 const sessionSeconds = 12 * 60 * 60;
@@ -23,17 +24,17 @@ export function authMethods(env) {
   return { token: Boolean(adminToken(env)), access: Boolean(accessConfig(env)) };
 }
 
-async function hmac(secret, message) {
+export async function hmac(secret, message) {
   const key = await crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(message)));
 }
-function same(a, b) {
+export function same(a, b) {
   if (a.length !== b.length) return false;
   let difference = 0;
   for (let index = 0; index < a.length; index++) difference |= a[index] ^ b[index];
   return difference === 0;
 }
-const hex = (bytes) => Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+export const hex = (bytes) => Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 
 export async function tokenMatches(env, candidate) {
   const token = adminToken(env);
@@ -50,14 +51,6 @@ export async function sessionCookie(env, secure, now = Date.now()) {
 }
 export function clearSessionCookie(secure) {
   return `${sessionCookieName}=; Path=/admin; Max-Age=0; HttpOnly; SameSite=Strict${secure ? "; Secure" : ""}`;
-}
-
-function cookie(request, name) {
-  for (const part of (request.headers.get("Cookie") || "").split(";")) {
-    const index = part.indexOf("=");
-    if (index > 0 && part.slice(0, index).trim() === name) return part.slice(index + 1).trim();
-  }
-  return null;
 }
 
 async function validSession(request, env, now) {

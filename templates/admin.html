@@ -58,6 +58,7 @@
           <div class="stat"><div class="stat-title">Short links</div><div id="stat-links" class="stat-value text-3xl">–</div><div id="stat-recent" class="stat-desc">&nbsp;</div></div>
           <div class="stat"><div class="stat-title">Total clicks</div><div id="stat-clicks" class="stat-value text-3xl">–</div><div class="stat-desc">Redirects served</div></div>
           <div class="stat"><div class="stat-title">Disabled</div><div id="stat-disabled" class="stat-value text-3xl">–</div><div class="stat-desc">Links returning 410</div></div>
+          <div class="stat"><div class="stat-title">Reported</div><div id="stat-reported" class="stat-value text-3xl">–</div><div class="stat-desc">Active links with abuse reports</div></div>
         </div>
 
         <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -66,8 +67,17 @@
               <div class="card-body gap-4 p-5 sm:p-6">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <h2 id="links-title" class="card-title text-lg">Links</h2>
-                  <label for="link-search" class="sr-only">Search links</label>
-                  <input id="link-search" type="search" class="input input-sm w-full sm:w-64" placeholder="Search name or destination…" autocomplete="off">
+                  <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                    <label for="link-filter" class="sr-only">Show</label>
+                    <select id="link-filter" class="select select-sm w-full sm:w-40">
+                      <option value="all">All links</option>
+                      <option value="reported">Reported</option>
+                      <option value="visitors">Made by visitors</option>
+                      <option value="disabled">Disabled</option>
+                    </select>
+                    <label for="link-search" class="sr-only">Search links</label>
+                    <input id="link-search" type="search" class="input input-sm w-full sm:w-64" placeholder="Search name or destination…" autocomplete="off">
+                  </div>
                 </div>
                 <div class="overflow-x-auto">
                   <table class="table table-sm">
@@ -111,12 +121,22 @@
                 <fieldset class="fieldset p-0">
                   <legend class="fieldset-legend pb-1 text-sm">Allowed destinations</legend>
                   <label class="label cursor-pointer justify-start gap-3 whitespace-normal text-sm text-base-content"><input type="radio" class="radio radio-sm radio-primary" name="domain_policy" value="approved">Approved domains only</label>
-                  <label class="label cursor-pointer justify-start gap-3 whitespace-normal text-sm text-base-content"><input type="radio" class="radio radio-sm radio-primary" name="domain_policy" value="any">Any domain</label>
+                  <label class="label cursor-pointer justify-start gap-3 whitespace-normal text-sm text-base-content"><input type="radio" class="radio radio-sm radio-primary" name="domain_policy" value="signed_in">Any domain for signed-in visitors; approved domains for everyone else</label>
+                  <label class="label cursor-pointer justify-start gap-3 whitespace-normal text-sm text-base-content"><input type="radio" class="radio radio-sm radio-primary" name="domain_policy" value="any">Any domain for everyone</label>
                 </fieldset>
-                <p class="text-xs leading-relaxed text-base-content/55">Redirects follow the current policy, so restricting domains also disables existing links to removed domains.</p>
+                <p id="sign-in-warning" class="hidden text-xs leading-relaxed text-warning">Visitor sign-in is not configured, so only administrators can link to other domains in this mode.</p>
+                <p class="text-xs leading-relaxed text-base-content/55">Redirects follow the current policy, so restricting domains also disables existing links to removed domains. Visitors' links to other domains open a warning page instead of redirecting.</p>
                 <button class="btn btn-primary" type="submit">Save access settings</button>
                 <p id="settings-status" class="text-sm text-base-content/60" role="status" aria-live="polite"></p>
               </form>
+            </section>
+
+            <section class="card card-border bg-base-100" aria-labelledby="protection-title">
+              <div class="card-body gap-3 p-5 sm:p-6">
+                <h2 id="protection-title" class="card-title text-lg">Abuse protection</h2>
+                <ul id="protection-list" class="space-y-2 text-sm"></ul>
+                <p class="text-xs leading-relaxed text-base-content/55">Configured with environment variables or Worker secrets. See the README.</p>
+              </div>
             </section>
 
             <section class="card card-border bg-base-100" aria-labelledby="domains-title">

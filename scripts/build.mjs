@@ -21,16 +21,21 @@ const css = Buffer.from((await postcss([tailwind()]).process(source, { from: at(
 const bundle = async (entry) => (await build({ entryPoints: [at(entry)], bundle: true, minify: true, format: "esm", platform: "browser", target: "es2022", write: false })).outputFiles[0].contents;
 const js = await bundle("src/client.mjs");
 const adminJs = await bundle("src/admin-client.mjs");
-const paths = { css: `/assets/app-${hash(css)}.css`, js: `/assets/app-${hash(js)}.js`, admin: `/assets/admin-${hash(adminJs)}.js` };
+const interstitialJs = await bundle("src/interstitial-client.mjs");
+const paths = { css: `/assets/app-${hash(css)}.css`, js: `/assets/app-${hash(js)}.js`, admin: `/assets/admin-${hash(adminJs)}.js`,
+  interstitial: `/assets/interstitial-${hash(interstitialJs)}.js` };
 const assets = {};
 for (const [url, bytes, type] of [[paths.css, css, "text/css; charset=utf-8"], [paths.js, js, "application/javascript; charset=utf-8"],
-  [paths.admin, adminJs, "application/javascript; charset=utf-8"], [fontPath, font, "font/woff2"]]) {
+  [paths.admin, adminJs, "application/javascript; charset=utf-8"], [paths.interstitial, interstitialJs, "application/javascript; charset=utf-8"],
+  [fontPath, font, "font/woff2"]]) {
   assets[url] = { data: Buffer.from(bytes).toString("base64"), type };
 }
 const template = async (name) => (await readFile(at("templates", name), "utf8"))
-  .replace("{{ css_url }}", paths.css).replace("{{ js_url }}", paths.js).replace("{{ admin_js_url }}", paths.admin);
+  .replace("{{ css_url }}", paths.css).replace("{{ js_url }}", paths.js).replace("{{ admin_js_url }}", paths.admin)
+  .replace("{{ interstitial_js_url }}", paths.interstitial);
 await writeFile(at("generated/ui.mjs"), `export const html = ${JSON.stringify(await template("index.html"))};\n` +
-  `export const adminHtml = ${JSON.stringify(await template("admin.html"))};\nexport const assets = ${JSON.stringify(assets)};\n`);
+  `export const adminHtml = ${JSON.stringify(await template("admin.html"))};\n` +
+  `export const interstitialHtml = ${JSON.stringify(await template("interstitial.html"))};\nexport const assets = ${JSON.stringify(assets)};\n`);
 
 // The container applies the same migration files Wrangler applies to D1.
 const names = (await readdir(at("migrations"))).filter((name) => /^\d{4}_[\w-]+\.sql$/.test(name)).sort();

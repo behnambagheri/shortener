@@ -13,6 +13,26 @@ test("server configuration validates and ignores empty values", () => {
   assert.deepEqual(config.values, { PUBLIC_ORIGIN: "https://s.example.com", ADMIN_TOKEN: token });
   assert.throws(() => serverConfig({ PORT: "70000" }));
   assert.throws(() => serverConfig({ PUBLIC_ORIGIN: "https://s.example.com/path" }));
+  assert.equal(serverConfig({ CLIENT_IP_HEADER: " X-Forwarded-For " }).clientIpHeader, "x-forwarded-for");
+  assert.throws(() => serverConfig({ CLIENT_IP_HEADER: "bad header" }));
+});
+
+test("container server: rate limits use the trusted proxy's client address", async () => {
+  const dataDir = await mkdtemp(path.join(tmpdir(), "shortener-"));
+  const service = await startServer({ PORT: "0", HOST: "127.0.0.1", DATA_DIR: dataDir, APPROVED_DOMAINS: "example.com", LINKS_PER_HOUR: "1",
+    CLIENT_IP_HEADER: "x-forwarded-for", MAINTENANCE: "off" });
+  try {
+    const create = (forwarded) => fetch(`http://127.0.0.1:${service.server.address().port}/api/links`, { method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-For": forwarded }, body: JSON.stringify({ original: "https://example.com/" }) });
+    assert.equal((await create("192.0.2.1")).status, 201);
+    assert.equal((await create("192.0.2.1")).status, 429);
+    // A client-supplied first entry does not change the bucket; the proxy's last entry does.
+    assert.equal((await create("192.0.2.9, 192.0.2.1")).status, 429);
+    assert.equal((await create("192.0.2.1, 192.0.2.2")).status, 201);
+  } finally {
+    await service.close();
+    await rm(dataDir, { recursive: true, force: true });
+  }
 });
 
 test("container server: SQLite persistence, admin token sign-in and redirects", async () => {

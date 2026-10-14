@@ -1,8 +1,9 @@
 import { ValidationError } from "./policy.mjs";
 
+// Turnstile loads its script and challenge frame from challenges.cloudflare.com.
 export const security = {
   "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
-  "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
 };
 
 export function reply(body, status = 200, type = "application/json; charset=utf-8", headers = {}) {
@@ -47,4 +48,30 @@ export async function payload(request, limit = 8192, { json = false } = {}) {
 
 export function publicOrigin(env, url) {
   return (env.PUBLIC_ORIGIN || url.origin).replace(/\/+$/, "");
+}
+
+// Browser sessions rely on SameSite cookies; reject cross-site requests outright as well.
+// Fetch metadata is authoritative where browsers send it; otherwise compare the Origin header.
+export function sameOrigin(request, url) {
+  const site = request.headers.get("Sec-Fetch-Site");
+  if (site) return ["same-origin", "none"].includes(site);
+  const origin = request.headers.get("Origin");
+  if (!origin) return true;
+  try { return new URL(origin).host === url.host; } catch { return false; }
+}
+
+export function cookie(request, name) {
+  for (const part of (request.headers.get("Cookie") || "").split(";")) {
+    const index = part.indexOf("=");
+    if (index > 0 && part.slice(0, index).trim() === name) return part.slice(index + 1).trim();
+  }
+  return null;
+}
+
+const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+export const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => entities[char]);
+
+// Fills [[name]] placeholders with HTML-escaped values.
+export function fill(template, values) {
+  return template.replace(/\[\[(\w+)\]\]/g, (match, name) => name in values ? escapeHtml(values[name]) : match);
 }

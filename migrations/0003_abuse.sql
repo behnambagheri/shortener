@@ -1,0 +1,13 @@
+ALTER TABLE links ADD COLUMN source TEXT NOT NULL DEFAULT 'public';
+ALTER TABLE links ADD COLUMN creator TEXT;
+ALTER TABLE links ADD COLUMN creator_ip TEXT;
+ALTER TABLE links ADD COLUMN expires_at INTEGER;
+ALTER TABLE links ADD COLUMN disabled_reason TEXT;
+ALTER TABLE links ADD COLUMN checked_at INTEGER;
+ALTER TABLE links ADD COLUMN alerted_at INTEGER;
+CREATE INDEX links_creator ON links (creator);
+CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at INTEGER NOT NULL, banned INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE reports (slug TEXT NOT NULL, reporter TEXT NOT NULL, reason TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY (slug, reporter));
+CREATE TABLE rate_limits (key TEXT PRIMARY KEY, window_start INTEGER NOT NULL, count INTEGER NOT NULL);
+CREATE TABLE threat_feed (entry TEXT PRIMARY KEY, host TEXT NOT NULL, added_at INTEGER NOT NULL);
+CREATE INDEX threat_feed_host ON threat_feed (host);

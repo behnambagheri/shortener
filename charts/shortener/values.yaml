@@ -25,6 +25,18 @@ admin:
     aud: ""
     emails: ""
 
+# Abuse protection (see the README). Non-secret settings go in `env`, for example
+# TURNSTILE_SITE_KEY, GITHUB_CLIENT_ID, GOOGLE_CLIENT_ID, ABUSE_EMAIL, LINKS_PER_HOUR, TELEGRAM_CHAT_ID.
+# Secrets (SESSION_SECRET, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_SECRET, TURNSTILE_SECRET_KEY, SAFE_BROWSING_API_KEY,
+# URLHAUS_AUTH_KEY, ALERT_WEBHOOK_URL, TELEGRAM_BOT_TOKEN) go in an existing Secret, or in `secrets` to create one.
+protection:
+  env: {}
+  existingSecret: ""
+  secrets: {}
+  # Header carrying the visitor address from a trusted reverse proxy, such as x-forwarded-for or cf-connecting-ip.
+  # Leave empty to use the connection address, which is the proxy's address behind an ingress.
+  clientIpHeader: x-forwarded-for
+
 # SQLite storage. The chart runs a single replica because SQLite allows one writer.
 persistence:
   enabled: true

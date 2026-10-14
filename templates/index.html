@@ -18,6 +18,7 @@
       </a>
       <nav class="flex items-center gap-2" aria-label="Related tools">
         <a href="https://ip.bea.sh" class="btn btn-ghost btn-sm hidden sm:inline-flex">IP info <span aria-hidden="true">↗</span></a>
+        <form id="account" method="post" action="/auth/logout" class="hidden items-center gap-2"><span id="account-name" class="badge badge-ghost hidden max-w-40 truncate sm:inline-flex"></span><button class="btn btn-ghost btn-sm whitespace-nowrap" type="submit">Sign out</button></form>
         <button id="theme-toggle" type="button" class="btn btn-sm" aria-label="Appearance: Auto"><span aria-hidden="true">◐</span><span id="theme-label">Auto</span></button>
       </nav>
     </header>
@@ -42,6 +43,7 @@
                   <label for="original" class="sr-only">Destination URL</label>
                   <input id="original" name="original" type="url" required maxlength="2048" autocomplete="url" spellcheck="false" placeholder="https://bea.sh/a/long/path" class="input input-lg min-w-0 w-full" aria-describedby="destination-help">
                   <p id="destination-help" class="label mt-1 whitespace-normal text-xs text-base-content/55">HTTP and HTTPS links. Approved domains and their subdomains.</p>
+                  <p id="sign-in-hint" class="mt-2 hidden flex-wrap items-center gap-2 text-xs text-base-content/65"><span>Sign in to link to any domain:</span><a id="sign-in-github" class="btn btn-xs hidden" href="/auth/github">GitHub</a><a id="sign-in-google" class="btn btn-xs hidden" href="/auth/google">Google</a></p>
                 </fieldset>
                 <fieldset class="fieldset min-w-0 p-0">
                   <legend class="fieldset-legend pb-2 text-sm">Short name <span class="font-normal text-base-content/45">optional</span></legend>
@@ -51,6 +53,7 @@
                   </label>
                   <p id="alias-help" class="label mt-1 whitespace-normal text-xs text-base-content/55">Leave this blank to generate a name. Each name can be used once.</p>
                 </fieldset>
+                <div id="turnstile" class="hidden min-h-0"></div>
                 <div id="form-error" role="alert" class="alert alert-error alert-soft hidden text-sm"><span id="error-text"></span></div>
                 <button id="submit-button" class="btn btn-primary btn-lg w-full" type="submit"><span id="submit-label">Create short link</span><span aria-hidden="true">→</span></button>
               </form>
@@ -62,6 +65,7 @@
               <label for="short-url" class="sr-only">Your short URL</label>
               <div class="flex flex-col gap-3 sm:flex-row"><input id="short-url" class="input min-w-0 w-full flex-1 font-mono text-sm" readonly type="text"><button id="copy-button" type="button" class="btn">Copy link</button></div>
               <div class="flex items-start justify-between gap-4 text-sm"><p id="destination-label" class="min-w-0 break-all text-base-content/55"></p><a id="open-link" class="btn btn-ghost btn-sm shrink-0" target="_blank" rel="noopener noreferrer">Open <span aria-hidden="true">↗</span></a></div>
+              <p id="expiry-note" class="hidden text-xs text-base-content/55"></p>
             </div>
           </div>
         </section>
@@ -74,6 +78,7 @@
             <div id="domain-list" class="flex flex-wrap gap-2" aria-live="polite"><p class="text-xs text-base-content/50">Loading approved domains…</p></div>
             <p id="domain-empty" class="hidden text-sm text-base-content/55">No matching domains.</p>
             <div class="border-t border-base-300 pt-4 text-xs leading-relaxed text-base-content/50">A short link keeps its original destination. To point somewhere new, create a new name.</div>
+            <div class="border-t border-base-300 pt-4 text-xs leading-relaxed text-base-content/50">Links to phishing, malware, or scams are disabled. Links to other websites show their destination before opening.<span id="abuse-contact" class="hidden"> Report abuse to <a id="abuse-link" class="link"></a>.</span></div>
           </div>
         </aside>
       </div>
