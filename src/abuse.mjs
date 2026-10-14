@@ -27,9 +27,19 @@ export async function reportLink(env, data, ip, origin) {
     const result = await env.DB.prepare("UPDATE links SET disabled = 1, disabled_reason = 'reports' WHERE slug = ? AND disabled = 0").bind(slug).run();
     disabled = result.meta.changes === 1;
   }
-  const alert = disabled
-    ? notify(env, `Disabled ${origin}/${slug} after ${count} abuse reports. Destination: ${link.original}`)
-    : notify(env, `Abuse report (${reason}) for ${origin}/${slug} (${count} so far). Destination: ${link.original}`);
+  const reportCount = threshold && link.source !== "admin" ? `${count} / ${threshold}` : String(count);
+  const alert = notify(env, [
+    disabled ? "🚫 Short link disabled" : "🚩 Abuse report",
+    `Reason: ${reason[0].toUpperCase()}${reason.slice(1)}`,
+    `Reports: ${reportCount}`,
+    `Status: ${disabled || link.disabled ? "Disabled" : "Enabled"}`,
+    "",
+    "🔗 Short link",
+    `${origin}/${slug}`,
+    "",
+    "🌐 Destination",
+    link.original,
+  ].join("\n"));
   return { slug, reported: true, disabled, alert };
 }
 

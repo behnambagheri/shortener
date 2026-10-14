@@ -294,7 +294,9 @@ test("abuse protection: warning page, screening, limits, reports, re-checks, ale
     const confirmation = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded", "CF-Connecting-IP": "192.0.2.11" }, body: "slug=visitor&reason=scam" });
     assert.match(await confirmation.text(), /The report was recorded/);
     assert.equal((await fetch("/visitor")).status, 410);
-    assert.ok(outside.alerts.some((text) => text.includes("after 2 abuse reports")));
+    assert.ok(outside.alerts.some((text) => text.startsWith("🚩 Abuse report\nReason: Phishing\nReports: 1 / 2\nStatus: Enabled\n")
+      && text.includes("\n🔗 Short link\nhttps://s.bea.sh/visitor\n\n🌐 Destination\n")));
+    assert.ok(outside.alerts.some((text) => text.startsWith("🚫 Short link disabled\nReason: Scam\nReports: 2 / 2\nStatus: Disabled\n")));
     assert.equal((await report({ slug: "missing" }, "192.0.2.12")).status, 404);
     for (let index = 0; index < 2; index++) await report({ slug: "trusted" }, `192.0.2.${20 + index}`);
     assert.equal((await fetch("/trusted")).status, 302);
