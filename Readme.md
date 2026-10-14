@@ -180,7 +180,7 @@ Names use 1–63 ASCII letters, numbers, hyphens, or underscores. Names are case
 
 The default list is `approved_domains.json`. The initial 30 domains were discovered across connected Cloudflare zones, Worker custom domains, and ArvanCloud accounts on October 14, 2026; provenance is recorded in `docs/domain-inventory.json`. Discovery is a snapshot, not a background account sync.
 
-Matching uses the parsed hostname and a dot boundary: `ip.bea.sh` is allowed; `evilbea.sh` and `bea.sh.evil.example` are rejected. Embedded credentials, malformed URLs, and links back to the shortener are rejected. An invalid or empty configuration fails closed.
+Matching uses the parsed hostname and a dot boundary: `ip.bea.sh` is allowed; `evilbea.sh` and `bea.sh.evil.example` are rejected. Basic-auth credentials such as `http://user:pass@host/` are allowed, and the policy checks the real hostname, so `https://bea.sh@evil.example` counts as `evil.example`. Malformed URLs and links back to the shortener are rejected. An invalid or empty configuration fails closed.
 
 ## Local development
 

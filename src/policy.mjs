@@ -41,8 +41,9 @@ export function destination(value, domains, ownHosts = []) {
   }
   let url;
   try { url = new URL(value); } catch { throw new ValidationError("Enter a valid destination URL."); }
-  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || !url.hostname) {
-    throw new ValidationError("Use an HTTP or HTTPS URL without embedded credentials.");
+  // Basic-auth credentials (http://user:pass@host) are allowed; the domain policy checks the real hostname.
+  if (!["http:", "https:"].includes(url.protocol) || !url.hostname) {
+    throw new ValidationError("Use an HTTP or HTTPS URL.");
   }
   const host = url.hostname.toLowerCase().replace(/\.$/, "");
   if (domains && !onDomains(host, domains)) {

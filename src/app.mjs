@@ -22,7 +22,11 @@ async function route(request, env, ctx, meta) {
   const url = new URL(request.url);
   const origin = publicOrigin(env, url);
   const method = request.method;
-  const home = html.replaceAll("__ORIGIN__", origin);
+  const { host: shortHost, hostname } = new URL(origin);
+  // Example destinations use the parent domain of the short host: s.example.com suggests example.com.
+  const labels = hostname.split(".");
+  const exampleHost = labels.length > 2 && !/^[\d.]+$/.test(hostname) ? labels.slice(1).join(".") : "example.com";
+  const home = html.replaceAll("__ORIGIN__", origin).replaceAll("__SHORT_HOST__", shortHost).replaceAll("__EXAMPLE_HOST__", exampleHost);
   const admin = await adminResponse(request, env, url);
   if (admin) return admin;
   const auth = await authResponse(request, env, url, (error, status, cookies = []) =>

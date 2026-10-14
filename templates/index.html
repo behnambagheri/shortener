@@ -52,14 +52,14 @@
                 <fieldset class="fieldset min-w-0 p-0">
                   <legend class="fieldset-legend pb-2 text-sm">Destination URL</legend>
                   <label for="original" class="sr-only">Destination URL</label>
-                  <input id="original" name="original" type="url" required maxlength="2048" autocomplete="url" spellcheck="false" placeholder="https://bea.sh/a/long/path" class="input input-lg min-w-0 w-full" aria-describedby="destination-help">
+                  <input id="original" name="original" type="url" required maxlength="2048" autocomplete="url" spellcheck="false" placeholder="https://__EXAMPLE_HOST__/a/long/path" class="input input-lg min-w-0 w-full" aria-describedby="destination-help">
                   <p id="destination-help" class="label mt-1 whitespace-normal text-xs text-base-content/55">HTTP and HTTPS links. Approved domains and their subdomains.</p>
                   <p id="sign-in-hint" class="mt-2 hidden flex-wrap items-center gap-2 text-xs text-base-content/65"><span>Sign in to link to any domain:</span><a id="sign-in-github" class="btn btn-xs hidden" href="/auth/github">GitHub</a><a id="sign-in-google" class="btn btn-xs hidden" href="/auth/google">Google</a></p>
                 </fieldset>
                 <fieldset class="fieldset min-w-0 p-0">
                   <legend class="fieldset-legend pb-2 text-sm">Short name <span class="font-normal text-base-content/45">optional</span></legend>
                   <label for="shortened" class="input input-lg w-full gap-0">
-                    <span class="shrink-0 border-r border-base-300 pr-3 text-sm text-base-content/45">s.bea.sh /</span>
+                    <span class="shrink-0 border-r border-base-300 pr-3 text-sm text-base-content/45">__SHORT_HOST__ /</span>
                     <input id="shortened" name="shortened" class="min-w-0 pl-3" type="text" maxlength="63" pattern="[A-Za-z0-9_-]{1,63}" autocomplete="off" spellcheck="false" placeholder="my-link" aria-describedby="alias-help">
                   </label>
                   <p id="alias-help" class="label mt-1 whitespace-normal text-xs text-base-content/55">Leave this blank to generate a name. Each name can be used once.</p>

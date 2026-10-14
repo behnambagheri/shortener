@@ -44,10 +44,12 @@ test("domain policy accepts subdomains and rejects authority spoofing", () => {
   const domains = approvedDomains(["BEA.sh", " behnam.pro"]);
   assert.deepEqual(domains, ["bea.sh", "behnam.pro"]);
   assert.equal(destination("HTTPS://IP.BEA.SH/path?q=1#ok", domains), "https://ip.bea.sh/path?q=1#ok");
-  for (const url of ["https://evilbea.sh", "https://bea.sh.evil.com", "https://bea.sh@evil.com", "https://u:p@bea.sh", "javascript:alert(1)", "//bea.sh", "https://bea.sh\\@evil.com", "https://bea.sh\n"]) assert.throws(() => destination(url, domains), url);
+  for (const url of ["https://evilbea.sh", "https://bea.sh.evil.com", "https://bea.sh@evil.com", "https://u:p@bea.sh@evil.com", "javascript:alert(1)", "//bea.sh", "https://bea.sh\\@evil.com", "https://bea.sh\n"]) assert.throws(() => destination(url, domains), url);
   assert.throws(() => destination("https://s.bea.sh/a", domains, ["s.bea.sh"]));
   assert.equal(destination("https://anything.example/x", null), "https://anything.example/x");
-  assert.throws(() => destination("https://u:p@anything.example/", null));
+  assert.equal(destination("https://u:p@BEA.sh/x", domains), "https://u:p@bea.sh/x");
+  assert.equal(destination("http://user:pass@anything.example/", null), "http://user:pass@anything.example/");
+  assert.equal(destination("http://anything.example", null), "http://anything.example/");
   for (const bad of [[], "", ["*.bea.sh"], ["bea.sh/path"], ["127.0.0.1"], "[bad"]) assert.throws(() => approvedDomains(bad));
   for (const bad of ["api", "Assets", "admin", "../x", "a".repeat(64)]) assert.throws(() => alias(bad));
 });
@@ -78,6 +80,7 @@ test("D1 integration: creation, immutable aliases, current policy and assets", a
     const css = body.match(/href="(\/assets\/app-[^"]+\.css)"/)[1];
     const asset = await mf.dispatchFetch(`https://s.bea.sh${css}`); assert.equal(asset.status, 200); assert.ok((await asset.text()).includes(".btn"));
     assert.ok(body.includes('<link rel="canonical" href="https://s.bea.sh/">')); assert.ok(!html.includes("__ORIGIN__"));
+    assert.ok(body.includes('placeholder="https://bea.sh/a/long/path"') && body.includes(">s.bea.sh /<") && !/__(SHORT|EXAMPLE)_HOST__/.test(body));
     const ld = JSON.parse(body.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]); assert.equal(ld.url, "https://s.bea.sh/");
     assert.ok(body.includes('href="/favicon.svg"')); assert.ok(!body.includes('href="/admin"'));
     for (const [path, type] of [["/favicon.svg", "image/svg+xml"], ["/favicon.ico", "image/x-icon"], ["/apple-touch-icon.png", "image/png"]]) {
