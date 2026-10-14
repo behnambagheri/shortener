@@ -22,16 +22,25 @@ async function route(request, env, ctx, meta) {
   const url = new URL(request.url);
   const origin = publicOrigin(env, url);
   const method = request.method;
+  const home = html.replaceAll("__ORIGIN__", origin);
   const admin = await adminResponse(request, env, url);
   if (admin) return admin;
   const auth = await authResponse(request, env, url, (error, status, cookies = []) =>
-    render(html, { error, field: "form" }, status, cookies.length ? { "Set-Cookie": cookies[0] } : {}));
+    render(home, { error, field: "form" }, status, cookies.length ? { "Set-Cookie": cookies[0] } : {}));
   if (auth) return auth;
   if (url.pathname.startsWith("/assets/") && ["GET", "HEAD"].includes(method)) {
     const asset = assets[url.pathname];
     return asset ? reply(decode(asset.data), 200, asset.type, { "Cache-Control": "public, max-age=31536000, immutable" }) : reply({ error: "Asset not found." }, 404);
   }
-  if (url.pathname === "/" && ["GET", "HEAD"].includes(method)) return render(html);
+  if (url.pathname === "/" && ["GET", "HEAD"].includes(method)) return render(home);
+  if (url.pathname === "/robots.txt" && ["GET", "HEAD"].includes(method)) {
+    return reply(`User-agent: *\nDisallow: /api/\nDisallow: /auth/\n\nSitemap: ${origin}/sitemap.xml\n`, 200, "text/plain; charset=utf-8",
+      { "Cache-Control": "public, max-age=86400" });
+  }
+  if (url.pathname === "/sitemap.xml" && ["GET", "HEAD"].includes(method)) {
+    return reply(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${origin}/</loc></url></urlset>\n`,
+      200, "application/xml; charset=utf-8", { "Cache-Control": "public, max-age=86400" });
+  }
   const settings = await loadSettings(env);
   if (url.pathname === "/api/config" && ["GET", "HEAD"].includes(method)) {
     const user = await currentUser(request, env);
@@ -57,10 +66,10 @@ async function route(request, env, ctx, meta) {
         throw new ValidationError("Link creation is limited to administrators.", 403, "form");
       }
       const result = await createLink(data, env, settings, origin, url.hostname, actor);
-      return form ? render(html, { result }) : reply(result, 201);
+      return form ? render(home, { result }) : reply(result, 201);
     } catch (error) {
       if (error instanceof ValidationError && form) {
-        return render(html, { error: error.message, field: error.field, original: data.original, shortened: data.shortened }, error.status);
+        return render(home, { error: error.message, field: error.field, original: data.original, shortened: data.shortened }, error.status);
       }
       throw error;
     }

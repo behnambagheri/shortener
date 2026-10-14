@@ -1,4 +1,25 @@
-# bea.sh Shortener
+# bea.sh Shortener: self-hosted URL shortener
+
+[![CI](https://github.com/behnambagheri/shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/behnambagheri/shortener/actions/workflows/ci.yml)
+[![Live](https://img.shields.io/badge/live-s.bea.sh-blue)](https://s.bea.sh)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Container](https://img.shields.io/badge/ghcr.io-behnambagheri%2Fshortener-blue?logo=docker)](https://github.com/behnambagheri/shortener/pkgs/container/shortener)
+
+A self-hosted URL shortener with custom short names, a domain allowlist, an admin dashboard and built-in phishing protection. Run it on **Cloudflare Workers + D1**, or as a **Docker** container, with **Docker Compose**, or on **Kubernetes** with Helm.
+
+**Try it: [s.bea.sh](https://s.bea.sh)**
+
+![bea.sh Shortener home page: create a short link with a custom name](docs/screenshot.png)
+
+- **Custom short links**: pick a name (`s.bea.sh/my-link`) or get a random one. Names never change once created.
+- **Domain allowlist**: limit short links to your own domains and their subdomains, or allow any domain.
+- **Admin dashboard**: search links, see click counts, disable or delete links, and choose who can create them.
+- **Abuse protection**: warning page for unknown destinations, rate limits, Cloudflare Turnstile, Google Safe Browsing, URLhaus and OpenPhish checks, abuse reports and alerts.
+- **Sign-in**: admin token or Cloudflare Access for admins; GitHub or Google for visitors.
+- **Runs anywhere**: one codebase for Cloudflare Workers (D1) and a Node.js container (SQLite), with a Helm chart.
+- **Light and dark themes**, no tracking, no third-party scripts beyond optional Turnstile.
+
+## Overview
 
 A domain-restricted short-link service with an admin area. The live instance runs at **https://s.bea.sh** on a Cloudflare Worker with D1. The same code also ships as a container image (`ghcr.io/behnambagheri/shortener`) for Docker, Docker Compose, and Kubernetes (Helm), using a local SQLite database. Its daisyUI 5 interface shares the Space Grotesk font, grid background, colors, and light/dark themes of bea.sh and ip.bea.sh.
 
@@ -212,3 +233,7 @@ The Docker SQLite database on `bea.aws.max` was read through a consistent in-mem
 The original `s.bea.sh` record was a proxied CNAME to `vps1.bea.sh`, TTL auto. The original Docker service and database remain intact. To return traffic to that service, detach the Worker custom domain and restore that CNAME; remove the custom-domain route from Wrangler too before the next GitHub push. Export/retain D1 first if new Cloudflare links must be preserved. For code-only rollback, redeploy an earlier known-good Worker version while retaining D1. Migrations `0002_admin.sql` and `0003_abuse.sql` only add columns, indexes and tables, so earlier Worker versions keep working against the migrated database. Links created before `0003` count as visitors' links, so those outside the approved domains show the warning page.
 
 The earlier Django implementation was removed in favor of the shared handler; it remains in Git history.
+
+## License
+
+[MIT](LICENSE)

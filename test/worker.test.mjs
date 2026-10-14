@@ -77,6 +77,12 @@ test("D1 integration: creation, immutable aliases, current policy and assets", a
     const home = await mf.dispatchFetch("https://s.bea.sh/"); const body = await home.text();
     const css = body.match(/href="(\/assets\/app-[^"]+\.css)"/)[1];
     const asset = await mf.dispatchFetch(`https://s.bea.sh${css}`); assert.equal(asset.status, 200); assert.ok((await asset.text()).includes(".btn"));
+    assert.ok(body.includes('<link rel="canonical" href="https://s.bea.sh/">')); assert.ok(!html.includes("__ORIGIN__"));
+    const ld = JSON.parse(body.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]); assert.equal(ld.url, "https://s.bea.sh/");
+    const robots = await mf.dispatchFetch("https://s.bea.sh/robots.txt"); assert.equal(robots.status, 200);
+    assert.ok((await robots.text()).includes("Sitemap: https://s.bea.sh/sitemap.xml"));
+    const sitemap = await mf.dispatchFetch("https://s.bea.sh/sitemap.xml"); assert.equal(sitemap.headers.get("content-type"), "application/xml; charset=utf-8");
+    assert.ok((await sitemap.text()).includes("<loc>https://s.bea.sh/</loc>"));
     const head = await mf.dispatchFetch("https://s.bea.sh/example", { method: "HEAD", redirect: "manual" }); assert.equal(head.status, 302); assert.equal(await head.text(), "");
     assert.equal((await (await mf.dispatchFetch("https://s.bea.sh/.well-known/health")).json()).status, "ok");
     await mf.setOptions(options({ APPROVED_DOMAINS: "[]" }));
