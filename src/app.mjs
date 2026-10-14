@@ -7,7 +7,7 @@ import { adminResponse } from "./admin.mjs";
 import { authResponse, currentUser, signInProviders } from "./users.mjs";
 import { reportLink } from "./abuse.mjs";
 import { setting } from "./limits.mjs";
-import { html, interstitialHtml, assets } from "../generated/ui.mjs";
+import { html, interstitialHtml, assets, icons } from "../generated/ui.mjs";
 
 function interstitial(env, slug, origin, target, { reported = false, status = 200 } = {}) {
   const abuse = env.ABUSE_EMAIL || "";
@@ -33,6 +33,10 @@ async function route(request, env, ctx, meta) {
     return asset ? reply(decode(asset.data), 200, asset.type, { "Cache-Control": "public, max-age=31536000, immutable" }) : reply({ error: "Asset not found." }, 404);
   }
   if (url.pathname === "/" && ["GET", "HEAD"].includes(method)) return render(home);
+  if (icons[url.pathname] && ["GET", "HEAD"].includes(method)) {
+    const icon = icons[url.pathname];
+    return reply(decode(icon.data), 200, icon.type, { "Cache-Control": "public, max-age=86400" });
+  }
   if (url.pathname === "/robots.txt" && ["GET", "HEAD"].includes(method)) {
     return reply(`User-agent: *\nDisallow: /api/\nDisallow: /auth/\n\nSitemap: ${origin}/sitemap.xml\n`, 200, "text/plain; charset=utf-8",
       { "Cache-Control": "public, max-age=86400" });

@@ -30,12 +30,19 @@ for (const [url, bytes, type] of [[paths.css, css, "text/css; charset=utf-8"], [
   [fontPath, font, "font/woff2"]]) {
   assets[url] = { data: Buffer.from(bytes).toString("base64"), type };
 }
+// Icons keep stable paths because browsers and search engines look for them by name.
+const icons = {};
+for (const [url, file, type] of [["/favicon.svg", "favicon.svg", "image/svg+xml"], ["/favicon.ico", "favicon.ico", "image/x-icon"],
+  ["/apple-touch-icon.png", "apple-touch-icon.png", "image/png"]]) {
+  icons[url] = { data: (await readFile(at("ui", file))).toString("base64"), type };
+}
 const template = async (name) => (await readFile(at("templates", name), "utf8"))
   .replace("{{ css_url }}", paths.css).replace("{{ js_url }}", paths.js).replace("{{ admin_js_url }}", paths.admin)
   .replace("{{ interstitial_js_url }}", paths.interstitial);
 await writeFile(at("generated/ui.mjs"), `export const html = ${JSON.stringify(await template("index.html"))};\n` +
   `export const adminHtml = ${JSON.stringify(await template("admin.html"))};\n` +
-  `export const interstitialHtml = ${JSON.stringify(await template("interstitial.html"))};\nexport const assets = ${JSON.stringify(assets)};\n`);
+  `export const interstitialHtml = ${JSON.stringify(await template("interstitial.html"))};\nexport const assets = ${JSON.stringify(assets)};\n` +
+  `export const icons = ${JSON.stringify(icons)};\n`);
 
 // The container applies the same migration files Wrangler applies to D1.
 const names = (await readdir(at("migrations"))).filter((name) => /^\d{4}_[\w-]+\.sql$/.test(name)).sort();

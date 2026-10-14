@@ -79,6 +79,11 @@ test("D1 integration: creation, immutable aliases, current policy and assets", a
     const asset = await mf.dispatchFetch(`https://s.bea.sh${css}`); assert.equal(asset.status, 200); assert.ok((await asset.text()).includes(".btn"));
     assert.ok(body.includes('<link rel="canonical" href="https://s.bea.sh/">')); assert.ok(!html.includes("__ORIGIN__"));
     const ld = JSON.parse(body.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]); assert.equal(ld.url, "https://s.bea.sh/");
+    assert.ok(body.includes('href="/favicon.svg"')); assert.ok(!body.includes('href="/admin"'));
+    for (const [path, type] of [["/favicon.svg", "image/svg+xml"], ["/favicon.ico", "image/x-icon"], ["/apple-touch-icon.png", "image/png"]]) {
+      const icon = await mf.dispatchFetch(`https://s.bea.sh${path}`); assert.equal(icon.status, 200); assert.equal(icon.headers.get("content-type"), type);
+      assert.ok((await icon.arrayBuffer()).byteLength > 100);
+    }
     const robots = await mf.dispatchFetch("https://s.bea.sh/robots.txt"); assert.equal(robots.status, 200);
     assert.ok((await robots.text()).includes("Sitemap: https://s.bea.sh/sitemap.xml"));
     const sitemap = await mf.dispatchFetch("https://s.bea.sh/sitemap.xml"); assert.equal(sitemap.headers.get("content-type"), "application/xml; charset=utf-8");
