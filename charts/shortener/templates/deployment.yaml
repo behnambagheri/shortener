@@ -1,0 +1,119 @@
+{{- $access := .Values.admin.access | default dict }}
+{{- $adminSecret := or .Values.admin.token .Values.admin.existingSecret }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "shortener.fullname" . }}
+  labels:
+    {{- include "shortener.labels" . | nindent 4 }}
+spec:
+  # SQLite allows one writer: one replica, and no overlap during upgrades.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "shortener.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "shortener.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- if and .Values.admin.token (not .Values.admin.existingSecret) }}
+        checksum/admin-secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: shortener
+          image: "{{ .Values.image.repository }}{{ if .Values.image.digest }}@{{ .Values.image.digest }}{{ else }}:{{ .Values.image.tag }}{{ end }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DATA_DIR
+              value: /var/lib/shortener
+            {{- with .Values.publicOrigin }}
+            - name: PUBLIC_ORIGIN
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.approvedDomains }}
+            - name: APPROVED_DOMAINS
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if $adminSecret }}
+            - name: ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "shortener.adminSecret" . | quote }}
+                  key: {{ .Values.admin.secretKey | quote }}
+            {{- end }}
+            {{- if $access.issuer }}
+            - name: ACCESS_ISSUER
+              value: {{ $access.issuer | quote }}
+            - name: ACCESS_AUD
+              value: {{ $access.aud | quote }}
+            - name: ADMIN_EMAILS
+              value: {{ $access.emails | quote }}
+            {{- end }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/shortener
+          startupProbe:
+            httpGet:
+              path: /.well-known/health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /.well-known/health
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /.well-known/health
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: data
+          {{- if or .Values.persistence.enabled .Values.persistence.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-data" (include "shortener.fullname" .)) | quote }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

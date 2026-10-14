@@ -1,0 +1,19 @@
+The shortener is running as {{ include "shortener.fullname" . }}.
+
+For local access:
+  kubectl --namespace {{ .Release.Namespace }} port-forward service/{{ include "shortener.fullname" . }} 8080:{{ .Values.service.port }}
+  open http://127.0.0.1:8080/admin
+
+{{- if not (or .Values.admin.token .Values.admin.existingSecret (.Values.admin.access | default dict).issuer) }}
+
+WARNING: admin sign-in is not configured. Set admin.token (or admin.existingSecret)
+to enable /admin, for example: --set admin.token="$(openssl rand -hex 32)"
+{{- end }}
+{{- if not (or .Values.persistence.enabled .Values.persistence.existingClaim) }}
+
+WARNING: persistence is disabled; links and admin settings are lost when the pod restarts.
+{{- end }}
+{{- if not .Values.publicOrigin }}
+
+Set publicOrigin (for example https://s.example.com) so generated short URLs use your public host.
+{{- end }}

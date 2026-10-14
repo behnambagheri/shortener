@@ -1,17 +1,27 @@
-volumes:
-  shortener_volume:
-
+# Usage: create a .env file next to this file (see .env.example), then `docker compose up -d`.
 services:
   shortener:
-    image: alirn76/url-shortener:latest
-    restart: always
+    image: ghcr.io/behnambagheri/shortener:${SHORTENER_TAG:-latest}
+    build: .
+    restart: unless-stopped
     ports:
-      - 8000:8000
-    volumes:
-      - shortener:/shortener/database
+      - "${SHORTENER_PORT:-8080}:8080"
     environment:
-      WORKER: 1
-      PRIVATE: true
-      BASE_URL: "https://example.com"
-      TITLE: "Simple URL Shortener"
-      DESCRIPTION: Create Short & Memorable URL In a Seconds."
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      # Admin sign-in at /admin. Generate with: openssl rand -hex 32
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      # Optional defaults; the admin area can override them.
+      APPROVED_DOMAINS: ${APPROVED_DOMAINS:-}
+      # Optional Cloudflare Access sign-in, when the service sits behind Access.
+      ACCESS_ISSUER: ${ACCESS_ISSUER:-}
+      ACCESS_AUD: ${ACCESS_AUD:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+    volumes:
+      - shortener-data:/var/lib/shortener
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  shortener-data:

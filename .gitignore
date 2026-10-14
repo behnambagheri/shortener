@@ -1,9 +1,12 @@
 .idea/
-.venv/
-__pycache__/
 .env
 .DS_Store
+node_modules/
+dist/
+generated/
+.wrangler/
+.dev.vars*
+data/
 database/
-public/
 /.claude/skills/
 /skills-lock.json

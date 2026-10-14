@@ -1,0 +1,59 @@
+image:
+  repository: ghcr.io/behnambagheri/shortener
+  tag: latest
+  digest: ""
+  pullPolicy: Always
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# Public origin used in generated short links, for example https://s.example.com.
+publicOrigin: ""
+# Optional default approved domains (JSON array or comma-separated). Empty uses the
+# bundled approved_domains.json. Domains saved in the admin area take precedence.
+approvedDomains: ""
+
+admin:
+  # Admin token for /admin (at least 16 characters). Setting it here creates a Secret;
+  # prefer --set admin.token=... or admin.existingSecret over committing it to a values file.
+  token: ""
+  existingSecret: ""
+  secretKey: token
+  # Optional Cloudflare Access sign-in when the service sits behind an Access application.
+  access:
+    issuer: ""
+    aud: ""
+    emails: ""
+
+# SQLite storage. The chart runs a single replica because SQLite allows one writer.
+persistence:
+  enabled: true
+  existingClaim: ""
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+service:
+  type: ClusterIP
+  port: 80
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: s.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

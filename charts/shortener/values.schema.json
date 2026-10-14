@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "image": {
+      "type": "object",
+      "required": ["repository", "tag", "digest", "pullPolicy"],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "tag": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^$|^sha256:[a-f0-9]{64}$" },
+        "pullPolicy": { "enum": ["Always", "IfNotPresent", "Never"] }
+      }
+    },
+    "publicOrigin": { "type": "string", "pattern": "^$|^https?://[^/?#\\s]+/?$" },
+    "approvedDomains": { "type": "string" },
+    "admin": {
+      "type": "object",
+      "properties": {
+        "token": { "type": "string", "pattern": "^$|^.{16,}$" },
+        "existingSecret": { "type": "string" },
+        "secretKey": { "type": "string", "minLength": 1 },
+        "access": {
+          "type": "object",
+          "properties": {
+            "issuer": { "type": "string", "pattern": "^$|^https://[a-z0-9-]+\\.cloudflareaccess\\.com/?$" },
+            "aud": { "type": "string" },
+            "emails": { "type": "string" }
+          }
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "existingClaim": { "type": "string" },
+        "storageClass": { "type": "string" },
+        "accessMode": { "enum": ["ReadWriteOnce", "ReadWriteOncePod", "ReadWriteMany"] },
+        "size": { "type": "string", "pattern": "^[1-9][0-9]*(Mi|Gi|Ti)$" }
+      }
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "type": { "enum": ["ClusterIP", "NodePort", "LoadBalancer"] }
+      }
+    },
+    "ingress": { "type": "object", "properties": { "enabled": { "type": "boolean" } } }
+  }
+}

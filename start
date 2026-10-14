@@ -1,5 +1,0 @@
-#!/bin/bash
-
-set -e
-python manage.py migrate --noinput
-exec gunicorn -w ${WORKER:-2} config.wsgi:application --bind 0.0.0.0:8000 --log-level INFO

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light dark">
+  <title>Admin · Short links · bea.sh</title>
+  <link rel="stylesheet" href="{{ css_url }}">
+  <script type="module" src="{{ admin_js_url }}"></script>
+</head>
+<body class="min-h-screen bg-base-200 font-sans text-base-content antialiased">
+  <div class="mx-auto flex min-h-screen max-w-6xl flex-col px-4 sm:px-8">
+    <header class="flex items-center justify-between gap-4 border-b border-base-300 py-6">
+      <a href="/" class="flex min-w-0 items-center gap-3 font-semibold tracking-tight" aria-label="Short links home">
+        <span class="grid size-10 shrink-0 place-items-center rounded-box border border-base-300 bg-base-100 text-sm">BB</span>
+        <span class="truncate">Short links <span class="mx-2 text-base-content/30">/</span><span class="font-normal text-base-content/65">Admin</span></span>
+      </a>
+      <nav class="flex items-center gap-2" aria-label="Admin">
+        <span id="identity" class="badge badge-ghost hidden max-w-48 truncate"></span>
+        <button id="theme-toggle" type="button" class="btn btn-sm" aria-label="Appearance: Auto"><span aria-hidden="true">◐</span><span id="theme-label">Auto</span></button>
+        <form id="logout-form" method="post" action="/admin/logout" class="hidden"><button class="btn btn-ghost btn-sm whitespace-nowrap" type="submit">Sign out</button></form>
+      </nav>
+    </header>
+
+    <main class="flex-1 py-10 sm:py-14">
+      <section id="login-view" class="mx-auto hidden max-w-md" aria-labelledby="login-title">
+        <div class="card card-border bg-base-100">
+          <div class="card-body gap-5 p-6 sm:p-8">
+            <div>
+              <h1 id="login-title" class="card-title text-2xl">Admin sign-in</h1>
+              <p class="mt-1 text-sm text-base-content/60">Manage approved domains, access, and short links.</p>
+            </div>
+            <div id="login-error" role="alert" class="alert alert-error alert-soft hidden text-sm"><span id="login-error-text"></span></div>
+            <form id="token-form" method="post" action="/admin/login" class="hidden space-y-4">
+              <fieldset class="fieldset p-0">
+                <legend class="fieldset-legend pb-2 text-sm">Admin token</legend>
+                <label for="token" class="sr-only">Admin token</label>
+                <input id="token" name="token" type="password" required autocomplete="current-password" spellcheck="false" class="input input-lg w-full" aria-describedby="token-help">
+                <p id="token-help" class="label mt-1 whitespace-normal text-xs text-base-content/55">The ADMIN_TOKEN value configured for this deployment.</p>
+              </fieldset>
+              <button class="btn btn-primary btn-lg w-full" type="submit">Sign in <span aria-hidden="true">→</span></button>
+            </form>
+            <p id="access-help" class="hidden text-sm leading-relaxed text-base-content/60">This deployment also accepts Cloudflare Access. Approved administrators who signed in through Access go straight to the dashboard.</p>
+            <p id="no-auth-help" class="hidden text-sm leading-relaxed text-base-content/60">Admin sign-in is not configured. Set <code class="font-mono">ADMIN_TOKEN</code> (at least 16 characters), or configure Cloudflare Access with <code class="font-mono">ACCESS_ISSUER</code>, <code class="font-mono">ACCESS_AUD</code>, and <code class="font-mono">ADMIN_EMAILS</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <div id="dashboard-view" class="hidden space-y-6">
+        <div>
+          <p class="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-base-content/55">Admin</p>
+          <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Short links dashboard</h1>
+        </div>
+        <div id="dashboard-error" role="alert" class="alert alert-error alert-soft hidden text-sm"><span id="dashboard-error-text"></span></div>
+
+        <div class="stats stats-vertical w-full border border-base-300 bg-base-100 sm:stats-horizontal">
+          <div class="stat"><div class="stat-title">Short links</div><div id="stat-links" class="stat-value text-3xl">–</div><div id="stat-recent" class="stat-desc">&nbsp;</div></div>
+          <div class="stat"><div class="stat-title">Total clicks</div><div id="stat-clicks" class="stat-value text-3xl">–</div><div class="stat-desc">Redirects served</div></div>
+          <div class="stat"><div class="stat-title">Disabled</div><div id="stat-disabled" class="stat-value text-3xl">–</div><div class="stat-desc">Links returning 410</div></div>
+        </div>
+
+        <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div class="min-w-0 space-y-6">
+            <section class="card card-border bg-base-100" aria-labelledby="links-title">
+              <div class="card-body gap-4 p-5 sm:p-6">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <h2 id="links-title" class="card-title text-lg">Links</h2>
+                  <label for="link-search" class="sr-only">Search links</label>
+                  <input id="link-search" type="search" class="input input-sm w-full sm:w-64" placeholder="Search name or destination…" autocomplete="off">
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="table table-sm">
+                    <thead><tr><th>Name</th><th>Destination</th><th class="text-right">Clicks</th><th>Created</th><th><span class="sr-only">Actions</span></th></tr></thead>
+                    <tbody id="link-rows"></tbody>
+                  </table>
+                </div>
+                <p id="links-empty" class="hidden py-6 text-center text-sm text-base-content/55">No links found.</p>
+                <div class="flex items-center justify-between gap-3 text-sm">
+                  <span id="links-range" class="text-base-content/55"></span>
+                  <div class="join"><button id="links-prev" type="button" class="btn btn-sm join-item" disabled>Previous</button><button id="links-next" type="button" class="btn btn-sm join-item" disabled>Next</button></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="card card-border bg-base-100" aria-labelledby="create-title">
+              <div class="card-body gap-4 p-5 sm:p-6">
+                <h2 id="create-title" class="card-title text-lg">Create a link</h2>
+                <p class="text-sm text-base-content/55">Admins can create links even when public creation is turned off. The domain policy still applies.</p>
+                <form id="create-form" class="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_200px_auto]">
+                  <label for="create-original" class="sr-only">Destination URL</label>
+                  <input id="create-original" type="url" required maxlength="2048" spellcheck="false" class="input w-full" placeholder="https://example.com/a/long/path">
+                  <label for="create-shortened" class="sr-only">Short name (optional)</label>
+                  <input id="create-shortened" type="text" maxlength="63" pattern="[A-Za-z0-9_-]{1,63}" spellcheck="false" autocomplete="off" class="input w-full" placeholder="Short name (optional)">
+                  <button class="btn btn-primary" type="submit">Create</button>
+                </form>
+                <p id="create-status" class="text-sm text-base-content/60" role="status" aria-live="polite"></p>
+              </div>
+            </section>
+          </div>
+
+          <aside class="space-y-6">
+            <section class="card card-border bg-base-100" aria-labelledby="access-title">
+              <form id="settings-form" class="card-body gap-4 p-5 sm:p-6">
+                <h2 id="access-title" class="card-title text-lg">Access</h2>
+                <fieldset class="fieldset p-0">
+                  <legend class="fieldset-legend pb-1 text-sm">Who can create links</legend>
+                  <label class="label cursor-pointer justify-start gap-3 whitespace-normal text-sm text-base-content"><input type="radio" class="radio radio-sm radio-primary" name="link_creation" value="public">Everyone (public)</label>
+                  <label class="label cursor-pointer justify-start gap-3 whitespace-normal text-sm text-base-content"><input type="radio" class="radio radio-sm radio-primary" name="link_creation" value="admin">Admins only</label>
+                </fieldset>
+                <fieldset class="fieldset p-0">
+                  <legend class="fieldset-legend pb-1 text-sm">Allowed destinations</legend>
+                  <label class="label cursor-pointer justify-start gap-3 whitespace-normal text-sm text-base-content"><input type="radio" class="radio radio-sm radio-primary" name="domain_policy" value="approved">Approved domains only</label>
+                  <label class="label cursor-pointer justify-start gap-3 whitespace-normal text-sm text-base-content"><input type="radio" class="radio radio-sm radio-primary" name="domain_policy" value="any">Any domain</label>
+                </fieldset>
+                <p class="text-xs leading-relaxed text-base-content/55">Redirects follow the current policy, so restricting domains also disables existing links to removed domains.</p>
+                <button class="btn btn-primary" type="submit">Save access settings</button>
+                <p id="settings-status" class="text-sm text-base-content/60" role="status" aria-live="polite"></p>
+              </form>
+            </section>
+
+            <section class="card card-border bg-base-100" aria-labelledby="domains-title">
+              <div class="card-body gap-4 p-5 sm:p-6">
+                <div class="flex items-center justify-between gap-3"><h2 id="domains-title" class="card-title text-lg">Approved domains</h2><span id="domain-count" class="badge badge-outline">…</span></div>
+                <p id="domain-source" class="text-xs leading-relaxed text-base-content/55"></p>
+                <form id="domain-form" class="join w-full">
+                  <label for="domain-input" class="sr-only">Add domains</label>
+                  <input id="domain-input" type="text" class="input input-sm join-item w-full" placeholder="example.com, other.org" autocomplete="off" spellcheck="false">
+                  <button class="btn btn-sm btn-primary join-item" type="submit">Add</button>
+                </form>
+                <label for="domain-filter" class="sr-only">Find a domain</label>
+                <input id="domain-filter" class="input input-sm w-full" type="search" placeholder="Find a domain…" autocomplete="off">
+                <ul id="domain-list" class="max-h-96 space-y-1 overflow-y-auto"></ul>
+                <button id="domain-reset" type="button" class="btn btn-ghost btn-sm hidden">Reset to deployment defaults</button>
+                <p id="domain-status" class="text-sm text-base-content/60" role="status" aria-live="polite"></p>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </main>
+    <footer class="flex flex-wrap items-center justify-between gap-4 border-t border-base-300 py-6 text-xs text-base-content/50">
+      <a href="/" class="hover:text-base-content">Back to short links</a><a href="https://github.com/behnambagheri/shortener" target="_blank" rel="noopener noreferrer" class="hover:text-base-content">Source on GitHub <span aria-hidden="true">↗</span></a>
+    </footer>
+  </div>
+  <script id="page-data" type="application/json">__PAGE_DATA__</script>
+</body>
+</html>
