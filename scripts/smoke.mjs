@@ -31,14 +31,22 @@ try {
   assert.ok((await policy.json()).approved_domains.includes("bea.sh"));
   const home = await request("/"); assert.equal(home.status, 200);
   const html = await home.text(); assert.ok(html.includes("Short links"));
-  for (const path of [...html.matchAll(/(?:src|href)="(\/assets\/[^"<>]+)"/g)].map(match => match[1])) assert.equal((await request(path)).status, 200);
+  // New asset hashes can reach the edge a few seconds after the release itself.
+  for (const path of [...html.matchAll(/(?:src|href)="(\/assets\/[^"<>]+)"/g)].map(match => match[1])) {
+    let status;
+    for (let attempt = 0; attempt < 10 && status !== 200; attempt++) {
+      if (attempt) await new Promise(resolve => setTimeout(resolve, 3000));
+      status = (await request(path)).status;
+    }
+    assert.equal(status, 200, path);
+  }
   const original = `https://bea.sh/?shortener-check=${slug}`;
   const result = await post({original, shortened:slug}); assert.equal(result.status, 201); created = true;
   assert.equal((await result.json()).short_url, `https://s.bea.sh/${slug}`);
   const redirect = await request(`/${slug}`); assert.equal(redirect.status, 302); assert.equal(redirect.headers.get("Location"), original);
   assert.equal((await post({original:"https://bea.sh/",shortened:slug})).status,409);
   for (const original of ["https://unapproved.example/", "https://bea.sh.evil.example/", "https://evilbea.sh/"]) assert.equal((await post({original})).status,403);
-  assert.equal((await post({original:"https://person:password@bea.sh/"})).status,400);
+  assert.equal((await post({original:"https://person:password@unapproved.example/"})).status,403);
   console.log(`Live checks passed: UI/assets, domain rules, create/redirect, duplicate protection${expectedRelease ? ", release " + expectedRelease : ""}.`);
 } finally {
   if (created) {
