@@ -6,13 +6,27 @@ const origin = (process.argv[2] || "https://s.bea.sh").replace(/\/$/, "");
 const expectedRelease = process.argv[3];
 const config = JSON.parse(await readFile(new URL("../wrangler.jsonc", import.meta.url)));
 const slug = `qa-${randomBytes(8).toString("hex")}`;
-const request = (path, options = {}) => fetch(origin + path, { redirect: "manual", ...options });
+const request = (path, options = {}) => fetch(origin + path, { redirect: "manual", signal: AbortSignal.timeout(10000), ...options });
 const post = (data) => request("/api/links", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+async function waitForRelease() {
+  const deadline = Date.now() + 60000;
+  let lastError;
+  do {
+    try {
+      const health = await request("/.well-known/health");
+      assert.equal(health.status, 200);
+      const state = await health.json(); assert.equal(state.status, "ok");
+      if (expectedRelease) assert.equal(state.release, expectedRelease);
+      return state;
+    } catch (error) { lastError = error; }
+    if (Date.now() >= deadline) break;
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  } while (Date.now() < deadline);
+  throw lastError;
+}
 let created = false;
 try {
-  const health = await request("/.well-known/health"); assert.equal(health.status, 200);
-  const state = await health.json(); assert.equal(state.status, "ok");
-  if (expectedRelease) assert.equal(state.release, expectedRelease);
+  await waitForRelease();
   const policy = await request("/api/config"); assert.equal(policy.status, 200);
   assert.ok((await policy.json()).approved_domains.includes("bea.sh"));
   const home = await request("/"); assert.equal(home.status, 200);
