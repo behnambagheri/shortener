@@ -40,20 +40,7 @@ function account() {
     for (const provider of config.sign_in) $(`sign-in-${provider}`).classList.remove("hidden");
     $("sign-in-hint").classList.replace("hidden", "flex");
   }
-  if (config.abuse_email) {
-    $("abuse-link").textContent = config.abuse_email; $("abuse-link").href = `mailto:${config.abuse_email}`;
-    $("abuse-contact").classList.remove("hidden");
-  }
 }
-function domains() {
-  const search = $("domain-filter").value.trim().toLowerCase();
-  const matches = config.approved_domains.filter((domain) => domain.includes(search));
-  $("domain-list").replaceChildren(...matches.map((domain) => {
-    const label = document.createElement("span"); label.className = "badge badge-outline text-xs"; label.textContent = domain; return label;
-  }));
-  $("domain-empty").classList.toggle("hidden", matches.length !== 0);
-}
-$("domain-filter").addEventListener("input", () => { if (config) domains(); });
 $("original").value = initial.original || "";
 $("shortened").value = initial.shortened || "";
 if (initial.error) showError(initial.error, initial.field);
@@ -67,19 +54,11 @@ try {
   if (!Array.isArray(config.approved_domains) || !config.approved_domains.length) throw new Error();
   account();
   if (any && config.turnstile_site_key && config.link_creation !== "admin") loadTurnstile(config.turnstile_site_key);
-  if (any) {
-    $("domain-count").textContent = "Any";
-    $("domains-help").textContent = "Any HTTP or HTTPS destination is currently allowed. Links to other domains show their destination before opening.";
-    $("destination-help").textContent = "HTTP and HTTPS links to any domain. Sign-in, wallet, and newly registered sites are refused.";
-    $("domain-filter").classList.add("hidden"); $("domain-list").replaceChildren();
-  } else {
-    $("domain-count").textContent = String(config.approved_domains.length);
-    domains();
-  }
+  if (any) $("destination-help").textContent = "HTTP and HTTPS links to any domain. Sign-in, wallet, and newly registered sites are refused.";
   if (config.link_creation === "admin") $("creation-notice").classList.remove("hidden");
   else $("submit-button").disabled = false;
 } catch {
-  $("domain-list").replaceChildren(); showError("Could not load the approved domains. Refresh the page to try again.");
+  showError("Could not load the shortener settings. Refresh the page to try again.");
 }
 $("shorten-form").addEventListener("submit", async (event) => {
   event.preventDefault();
