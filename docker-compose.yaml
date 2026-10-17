@@ -8,6 +8,7 @@ services:
       - "${SHORTENER_PORT:-8080}:8080"
     environment:
       PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      CANONICAL_ORIGIN: ${CANONICAL_ORIGIN:-}
       # Admin sign-in at /admin. Generate with: openssl rand -hex 32
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       # Optional defaults; the admin area can override them.

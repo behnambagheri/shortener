@@ -9,6 +9,8 @@ fullnameOverride: ""
 
 # Public origin used in generated short links, for example https://s.example.com.
 publicOrigin: ""
+# On a mirror, the primary site's origin for the canonical link.
+canonicalOrigin: ""
 # Optional default approved domains (JSON array or comma-separated). Empty uses the
 # bundled approved_domains.json. Domains saved in the admin area take precedence.
 approvedDomains: ""

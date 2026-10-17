@@ -50,6 +50,11 @@ export function publicOrigin(env, url) {
   return (env.PUBLIC_ORIGIN || url.origin).replace(/\/+$/, "");
 }
 
+// A mirror (e.g. one hosted for domestic access) names the primary site as canonical so search engines don't treat it as a duplicate.
+export function canonicalOrigin(env, origin) {
+  return (env.CANONICAL_ORIGIN || origin).replace(/\/+$/, "");
+}
+
 // Browser sessions rely on SameSite cookies; reject cross-site requests outright as well.
 // Fetch metadata is authoritative where browsers send it; otherwise compare the Origin header.
 export function sameOrigin(request, url) {

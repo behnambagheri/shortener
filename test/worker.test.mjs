@@ -98,6 +98,18 @@ test("D1 integration: creation, immutable aliases, current policy and assets", a
   } finally { await mf.dispose(); }
 });
 
+test("a mirror names the primary site as canonical but keeps its own short host", async () => {
+  const mf = new Miniflare(options({ PUBLIC_ORIGIN: "https://s.behnam.pro", CANONICAL_ORIGIN: "https://s.bea.sh/" }));
+  try {
+    await migrate(await mf.getD1Database("DB"));
+    const body = await (await mf.dispatchFetch("https://s.behnam.pro/")).text();
+    assert.ok(body.includes('<link rel="canonical" href="https://s.bea.sh/">'));
+    assert.ok(body.includes('<meta property="og:url" content="https://s.bea.sh/">'));
+    assert.equal(JSON.parse(body.match(/<script type="application\/ld\+json">(.*?)<\/script>/)[1]).url, "https://s.bea.sh/");
+    assert.ok(body.includes(">s.behnam.pro /<") && !body.includes("__CANONICAL__"));
+  } finally { await mf.dispose(); }
+});
+
 test("admin: token sign-in, settings, link management and cross-site protection", async () => {
   const mf = new Miniflare(options());
   try {

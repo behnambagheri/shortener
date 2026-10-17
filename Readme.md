@@ -102,6 +102,7 @@ Setup notes:
 | Variable | Purpose |
 | --- | --- |
 | `PUBLIC_ORIGIN` | Origin used in generated short URLs, such as `https://s.example.com`. Defaults to the request origin. |
+| `CANONICAL_ORIGIN` | Origin the home page names as canonical. Set it on a mirror to point search engines at the primary site, such as `https://s.example.com`. Defaults to `PUBLIC_ORIGIN`. |
 | `APPROVED_DOMAINS` | Default approved domains: a JSON array or comma-separated list. Defaults to `approved_domains.json`. |
 | `ADMIN_TOKEN` | Admin token, at least 16 characters. |
 | `ACCESS_ISSUER`, `ACCESS_AUD`, `ADMIN_EMAILS` | Optional Cloudflare Access sign-in. |
@@ -232,7 +233,7 @@ The Docker SQLite database on `bea.aws.max` was read through a consistent in-mem
 
 The original `s.bea.sh` record was a proxied CNAME to `vps1.bea.sh`, TTL auto. The original Docker service and database remain intact. To return traffic to that service, detach the Worker custom domain and restore that CNAME; remove the custom-domain route from Wrangler too before the next GitHub push. Export/retain D1 first if new Cloudflare links must be preserved. For code-only rollback, redeploy an earlier known-good Worker version while retaining D1. Migrations `0002_admin.sql` and `0003_abuse.sql` only add columns, indexes and tables, so earlier Worker versions keep working against the migrated database. Links created before `0003` count as visitors' links, so those outside the approved domains show the warning page.
 
-The earlier Django implementation was removed in favor of the shared handler; it remains in Git history.
+The earlier Django implementation was removed in favor of the shared handler; it remains in Git history. The project started from [AliRn76/shortener](https://github.com/AliRn76/shortener) and has since been rewritten.
 
 ## License
 

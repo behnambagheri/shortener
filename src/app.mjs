@@ -1,6 +1,6 @@
 import { destination, onDomains, ValidationError } from "./policy.mjs";
 import { createLink } from "./links.mjs";
-import { security, reply, render, decode, payload, publicOrigin, fill } from "./http.mjs";
+import { security, reply, render, decode, payload, publicOrigin, canonicalOrigin, fill } from "./http.mjs";
 import { loadSettings, allowedFor } from "./settings.mjs";
 import { authenticate } from "./auth.mjs";
 import { adminResponse } from "./admin.mjs";
@@ -26,7 +26,7 @@ async function route(request, env, ctx, meta) {
   // Example destinations use the parent domain of the short host: s.example.com suggests example.com.
   const labels = hostname.split(".");
   const exampleHost = labels.length > 2 && !/^[\d.]+$/.test(hostname) ? labels.slice(1).join(".") : "example.com";
-  const home = html.replaceAll("__ORIGIN__", origin).replaceAll("__SHORT_HOST__", shortHost).replaceAll("__EXAMPLE_HOST__", exampleHost);
+  const home = html.replaceAll("__CANONICAL__", canonicalOrigin(env, origin)).replaceAll("__ORIGIN__", origin).replaceAll("__SHORT_HOST__", shortHost).replaceAll("__EXAMPLE_HOST__", exampleHost);
   const admin = await adminResponse(request, env, url);
   if (admin) return admin;
   const auth = await authResponse(request, env, url, (error, status, cookies = []) =>

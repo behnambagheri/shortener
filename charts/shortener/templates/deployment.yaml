@@ -61,6 +61,10 @@ spec:
             - name: PUBLIC_ORIGIN
               value: {{ . | quote }}
             {{- end }}
+            {{- with .Values.canonicalOrigin }}
+            - name: CANONICAL_ORIGIN
+              value: {{ . | quote }}
+            {{- end }}
             {{- with .Values.approvedDomains }}
             - name: APPROVED_DOMAINS
               value: {{ . | quote }}
