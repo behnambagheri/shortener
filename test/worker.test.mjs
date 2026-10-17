@@ -74,6 +74,8 @@ test("D1 integration: creation, immutable aliases, current policy and assets", a
     await db.prepare("INSERT INTO links (slug, original, created_at) VALUES (?, ?, ?)").bind("revoked", "https://evil.example/", 0).run();
     assert.equal((await mf.dispatchFetch("https://s.bea.sh/revoked")).status, 403);
     assert.equal((await mf.dispatchFetch("https://s.bea.sh/missing")).status, 404);
+    for (const path of ["/wp-login.php", "/.env", "/wp-admin/setup-config.php"]) assert.equal((await mf.dispatchFetch(`https://s.bea.sh${path}`)).status, 404);
+    assert.equal((await mf.dispatchFetch("https://s.bea.sh/xmlrpc.php", { method: "POST", body: "x" })).status, 405);
     const injected = await post({ original: "https://evil.example/</script><script>alert(1)</script>" }, "/");
     const html = await injected.text(); assert.ok(!html.includes("<script>alert(1)</script>"));
     const home = await mf.dispatchFetch("https://s.bea.sh/"); const body = await home.text();

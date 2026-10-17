@@ -18,10 +18,23 @@ function interstitial(env, slug, origin, target, { reported = false, status = 20
   return reply(page, status, "text/html; charset=utf-8", { "X-Robots-Tag": "noindex, nofollow" });
 }
 
+const slugPath = /^\/([A-Za-z0-9_-]{1,63})$/;
+const fixedPaths = new Set(["/", "/robots.txt", "/sitemap.xml", "/api/config", "/api/links", "/api/reports", "/.well-known/health"]);
+
+// Scanners probe paths like /wp-login.php or /.env; answer them before any D1 read.
+function knownPath(pathname) {
+  return fixedPaths.has(pathname) || slugPath.test(pathname) || Boolean(icons[pathname]) || pathname === "/admin"
+    || ["/admin/", "/auth/", "/assets/"].some((prefix) => pathname.startsWith(prefix));
+}
+
 async function route(request, env, ctx, meta) {
   const url = new URL(request.url);
-  const origin = publicOrigin(env, url);
   const method = request.method;
+  if (!knownPath(url.pathname)) {
+    return ["GET", "HEAD"].includes(method) ? reply({ error: "Short link not found." }, 404)
+      : reply({ error: "Method not allowed." }, 405, undefined, { Allow: "GET, HEAD, POST" });
+  }
+  const origin = publicOrigin(env, url);
   const { host: shortHost, hostname } = new URL(origin);
   // Example destinations use the parent domain of the short host: s.example.com suggests example.com.
   const labels = hostname.split(".");
@@ -92,7 +105,7 @@ async function route(request, env, ctx, meta) {
     return interstitial(env, result.slug, origin, link.original, { reported: true });
   }
   if (!["GET", "HEAD"].includes(method)) return reply({ error: "Method not allowed." }, 405, undefined, { Allow: "GET, HEAD, POST" });
-  const match = /^\/([A-Za-z0-9_-]{1,63})$/.exec(url.pathname);
+  const match = slugPath.exec(url.pathname);
   if (!match) return reply({ error: "Short link not found." }, 404);
   const link = await env.DB.prepare("SELECT original, disabled, source, expires_at FROM links WHERE slug = ?").bind(match[1]).first();
   if (!link) return reply({ error: "Short link not found." }, 404);
