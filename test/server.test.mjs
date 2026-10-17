@@ -13,6 +13,8 @@ test("server configuration validates and ignores empty values", () => {
   assert.deepEqual(config.values, { PUBLIC_ORIGIN: "https://s.example.com", ADMIN_TOKEN: token });
   assert.throws(() => serverConfig({ PORT: "70000" }));
   assert.throws(() => serverConfig({ PUBLIC_ORIGIN: "https://s.example.com/path" }));
+  assert.throws(() => serverConfig({ CANONICAL_ORIGIN: "https://s.example.com/path" }));
+  assert.equal(serverConfig({ CANONICAL_ORIGIN: "https://s.bea.sh" }).values.CANONICAL_ORIGIN, "https://s.bea.sh");
   assert.equal(serverConfig({ CLIENT_IP_HEADER: " X-Forwarded-For " }).clientIpHeader, "x-forwarded-for");
   assert.throws(() => serverConfig({ CLIENT_IP_HEADER: "bad header" }));
 });

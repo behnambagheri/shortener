@@ -8,7 +8,7 @@ import { adminToken, authMethods } from "../src/auth.mjs";
 import { runMaintenance } from "../src/abuse.mjs";
 import { SQLiteD1 } from "./sqlite.mjs";
 
-const bindings = ["PUBLIC_ORIGIN", "APPROVED_DOMAINS", "ADMIN_TOKEN", "ACCESS_ISSUER", "ACCESS_AUD", "ADMIN_EMAILS", "DEPLOYMENT_SHA",
+const bindings = ["PUBLIC_ORIGIN", "CANONICAL_ORIGIN", "APPROVED_DOMAINS", "ADMIN_TOKEN", "ACCESS_ISSUER", "ACCESS_AUD", "ADMIN_EMAILS", "DEPLOYMENT_SHA",
   "SESSION_SECRET", "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "MIN_ACCOUNT_DAYS",
   "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY", "SAFE_BROWSING_API_KEY", "URLHAUS_AUTH_KEY", "THREAT_FEED_URLS", "NEW_DOMAIN_DAYS",
   "LINKS_PER_HOUR", "USER_LINKS_PER_DAY", "REPORTS_PER_HOUR", "REPORT_THRESHOLD", "ANONYMOUS_LINK_DAYS", "SPIKE_CLICKS",
@@ -18,7 +18,9 @@ const maintenanceInterval = 3 * 60 * 60 * 1000;
 export function serverConfig(env = process.env) {
   const port = Number(env.PORT || 8080);
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error("Invalid PORT.");
-  if (env.PUBLIC_ORIGIN && !/^https?:\/\/[^/?#\s]+\/?$/.test(env.PUBLIC_ORIGIN)) throw new Error("PUBLIC_ORIGIN must be an origin such as https://s.example.com.");
+  for (const name of ["PUBLIC_ORIGIN", "CANONICAL_ORIGIN"]) {
+    if (env[name] && !/^https?:\/\/[^/?#\s]+\/?$/.test(env[name])) throw new Error(`${name} must be an origin such as https://s.example.com.`);
+  }
   const values = Object.fromEntries(bindings.filter((name) => env[name] !== undefined && env[name] !== "").map((name) => [name, env[name]]));
   // CLIENT_IP_HEADER names a header set by a trusted reverse proxy, such as cf-connecting-ip or x-forwarded-for.
   const clientIpHeader = (env.CLIENT_IP_HEADER || "").trim().toLowerCase() || null;
